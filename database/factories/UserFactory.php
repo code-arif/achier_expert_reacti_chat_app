@@ -6,39 +6,33 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
- */
 class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
-    protected static ?string $password;
+    protected static ?string $password = null;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
+            'f_name' => $this->faker->firstName,
+            'l_name' => $this->faker->lastName,
+            'email' => $this->faker->unique()->safeEmail,
             'password' => static::$password ??= Hash::make('password'),
+            'role' => $this->faker->randomElement(['user', 'dj', 'promoter', 'artist', 'venue']),
+            'avatar' => null,
+            'is_otp_verified' => $this->faker->boolean(80),
+            'email_verified_at' => now(),
+            'profession' => $this->faker->jobTitle,
+            'gender' => $this->faker->randomElement(['male', 'female', 'other']),
+            'age' => (string) $this->faker->numberBetween(18, 50),
+            'address' => $this->faker->streetAddress,
+            'country' => $this->faker->country,
+            'city' => $this->faker->city,
+            'state' => $this->faker->state,
+            'zip_code' => $this->faker->postcode,
+            'latitude' => $this->faker->latitude,
+            'longitude' => $this->faker->longitude,
+            'get_notification' => $this->faker->boolean(60),
             'remember_token' => Str::random(10),
         ];
-    }
-
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
-    public function unverified(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
     }
 }

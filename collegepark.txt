@@ -1,0 +1,14 @@
+FTP account creadencials:
+
+FTP server   : ftp.softvencefsd.xyz
+FTP username : app@collegepark.softvencefsd.xyz
+FTP password : aTQZ72O#5l]Gu2Z{
+FTP & explicit FTPS port:  21
+
+
+Database User : softvencefsd_collegepark
+Database password : aTQZ72O#5l]Gu2Z{
+
+
+Database Credencials :  sdf
+

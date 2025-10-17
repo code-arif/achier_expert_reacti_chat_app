@@ -1,0 +1,4 @@
+
+$( function() {
+	$('.counter').countUp();
+});

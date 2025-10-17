@@ -1,47 +1,59 @@
 <?php
 
-use App\Http\Controllers\Web\Admin\Auth\AuthController;
-use App\Http\Controllers\Web\Admin\Auth\ForgetPasswordController;
-use App\Http\Controllers\Web\Admin\Auth\PasswordUpdateController;
-use App\Http\Controllers\Web\Admin\Auth\ProfileController;
+use App\Http\Controllers\Web\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Web\Auth\ConfirmablePasswordController;
+use App\Http\Controllers\Web\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\Web\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Web\Auth\NewPasswordController;
+use App\Http\Controllers\Web\Auth\PasswordController;
+use App\Http\Controllers\Web\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Web\Auth\RegisteredUserController;
+use App\Http\Controllers\Web\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
-// guest mode admin panel
 Route::middleware('guest')->group(function () {
+    Route::get('register', [RegisteredUserController::class, 'create'])
+        ->name('register');
 
-    // admin login
-    Route::post('login', [AuthController::class, 'login'])->name('admin.login');
+    Route::post('register', [RegisteredUserController::class, 'store']);
 
-    // show forget passwrod page
-    Route::get('forgot-password', [ForgetPasswordController::class, 'create'])->name('show.forget.password');
+    Route::get('login', [AuthenticatedSessionController::class, 'create'])
+        ->name('login');
 
-    // forget password
-    Route::post('forgot-password', [ForgetPasswordController::class, 'store'])->name('password.email');
+    Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
-    // show reset password
-    Route::get('reset-password/{token}', [ForgetPasswordController::class, 'create'])->name('show.reset.password');
+    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
+        ->name('password.request');
 
-    // set new password
-    Route::post('reset-password', [ForgetPasswordController::class, 'store'])->name('password.store');
+    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->name('password.email');
+
+    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
+        ->name('password.reset');
+
+    Route::post('reset-password', [NewPasswordController::class, 'store'])
+        ->name('password.store');
 });
 
-
-// auth mode admin panel
 Route::middleware('auth')->group(function () {
-    // show password update page
-    Route::get('password-update', [PasswordUpdateController::class, 'create'])->name('show.password.update');
-    Route::put('password-update', [PasswordUpdateController::class, 'update'])->name('password.update');
+    Route::get('verify-email', EmailVerificationPromptController::class)
+        ->name('verification.notice');
 
-    // profile manage
-    Route::get('profile', [ProfileController::class, 'show'])->name('show.profile');
-    Route::post('update', [ProfileController::class, 'update'])->name('update.profile');
+    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
 
-    // update admin avatar
-    Route::get('avatar', [ProfileController::class, 'show'])->name('show.avatar');
-    Route::post('avatar', [ProfileController::class, 'update'])->name('update.avatar');
+    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
 
+    Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
+        ->name('password.confirm');
 
-    // logout
-    Route::post('logout', [AuthController::class, 'destroy'])
+    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
+
+    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
 });
