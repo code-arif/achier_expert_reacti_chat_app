@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\React\User\Auth;
 use Exception;
 use App\Models\User;
 // use App\Mail\SendOtpMail;
+use App\Mail\OtpMail;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -22,6 +23,43 @@ class ResetPasswordController extends Controller
     use ApiResponse;
 
     //send forget otp
+    // public function forgotPassword(Request $request)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'email' => 'required|email|exists:users,email',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return $this->error([], $validator->errors()->first(), 422);
+    //     }
+
+    //     try {
+    //         $user = User::where('email', $request->email)->first();
+
+    //         if (!$user) {
+    //             return $this->error([], 'User not found.', 404);
+    //         }
+
+    //         $otp = rand(1000, 9999);
+
+    //         $user->update([
+    //             'otp'            => $otp,
+    //             'otp_expires_at' => Carbon::now()->addMinutes(5),
+    //         ]);
+
+    //         // Optional: Enable mail sending
+    //         Mail::to($user->email)->send(new OtpMail($otp, $user));
+
+    //         return $this->success([
+    //             'email' => $user->email,
+    //             'otp'   => $otp
+    //         ], 'Forgot password OTP sent successfully.', 200);
+    //     } catch (Exception $e) {
+    //         Log::error($e->getMessage());
+    //         return $this->error([], 'An error occurred. Please try again later.', 500);
+    //     }
+    // }
+
     public function forgotPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -33,32 +71,49 @@ class ResetPasswordController extends Controller
         }
 
         try {
-            $user = User::where('email', $request->email)->first();
+            $email = strtolower(trim($request->email));
+            $user = User::where('email', $email)
+                ->where('status', 'active')
+                ->whereNull('deleted_at')
+                ->first();
 
             if (!$user) {
                 return $this->error([], 'User not found.', 404);
             }
 
-            $otp = rand(1000, 9999);
+            // Check OTP rate limiting
+            if ($user->otp_expires_at && Carbon::parse($user->otp_expires_at)->isFuture()) {
+                $remainingTime = Carbon::parse($user->otp_expires_at)->diffInSeconds(now());
+                if ($remainingTime > 240) { // If less than 1 minute passed since last OTP
+                    return $this->error([], 'Please wait before requesting a new OTP.', 429);
+                }
+            }
 
+            // Generate secure OTP
+            $otp = random_int(1000, 9999);
+
+            // Update user
             $user->update([
-                'otp'            => $otp,
+                'otp' => $otp,
                 'otp_expires_at' => Carbon::now()->addMinutes(5),
             ]);
 
-            // Optional: Enable mail sending
-            // Mail::to($user->email)->queue(new SendForgotOtpMail($otp));
+            // Send email
+            Mail::to($user->email)->send(new OtpMail($otp, $user));
 
             return $this->success([
                 'email' => $user->email,
-                'otp'   => $otp
-            ], 'Forgot password OTP sent successfully.', 200);
+                'expires_in' => '5 minutes',
+                'otp' => $otp // Remove in production
+            ], 'Password reset OTP sent successfully.', 200);
         } catch (Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Forgot Password Error: ' . $e->getMessage(), [
+                'email' => $request->email ?? 'N/A',
+                'trace' => $e->getTraceAsString()
+            ]);
             return $this->error([], 'An error occurred. Please try again later.', 500);
         }
     }
-
 
 
     public function verifyOTP(Request $request)
@@ -164,21 +219,29 @@ class ResetPasswordController extends Controller
         }
 
         try {
-            $user = User::where('email', $request->email)->first();
+            $email = strtolower(trim($request->email));
+            $user = User::where('email', $email)
+                ->where('status', 'active')
+                ->whereNull('deleted_at')
+                ->first();
+
             if (!$user) {
-                return $this->error([], 'User not found', 404);
+                return $this->error([], 'User not found.', 404);
             }
 
+            // OTP rate limit check
             if ($user->otp_expires_at) {
-                $lastSent = $user->otp_expires_at->subMinutes(5);
+                $lastSent = Carbon::parse($user->otp_expires_at)->subMinutes(5);
                 $secondsSinceLast = (int) $lastSent->diffInSeconds(now());
+
                 if ($secondsSinceLast < 60) {
                     $secondsLeft = 60 - $secondsSinceLast;
-                    return $this->error([], 'Please wait ' . $secondsLeft . ' sec before requesting a new OTP.', 429);
+                    return $this->error([], "Please wait {$secondsLeft} seconds before requesting a new OTP.", 429);
                 }
             }
 
-            $otp = rand(1000, 9999);
+            // Generate new OTP
+            $otp = random_int(1000, 9999);
             $otpExpiresAt = now()->addMinutes(5);
 
             $user->update([
@@ -186,13 +249,19 @@ class ResetPasswordController extends Controller
                 'otp_expires_at' => $otpExpiresAt,
             ]);
 
-            // You can send the OTP via email or SMS here. Example:
-            // Mail::to($user->email)->queue(new SendOtpMail($otp));
+            Mail::to($user->email)->send(new OtpMail($otp, $user));
 
-            return $this->success(['otp' => $otp], 'OTP resent successfully.', 200);
+            return $this->success([
+                'email' => $user->email,
+                'expires_in' => '5 minutes',
+                'otp' => $otp, // remove in production
+            ], 'OTP resent successfully.', 200);
         } catch (Exception $e) {
-            Log::error($e->getMessage());
-            return $this->error([], $e->getMessage(), 500);
+            Log::error('Resend OTP Error: ' . $e->getMessage(), [
+                'email' => $request->email ?? 'N/A',
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->error([], 'An error occurred. Please try again later.', 500);
         }
     }
 }
