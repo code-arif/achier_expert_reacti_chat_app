@@ -51,6 +51,31 @@ class UserSeeder extends Seeder
                 'last_name' => 'doe',
                 'email' => 'jimmi@doe.com',
             ],
+            [
+                'first_name' => 'rahat',
+                'last_name' => 'khan',
+                'email' => 'rahat@khan.com',
+            ],
+            [
+                'first_name' => 'rabbi',
+                'last_name' => 'alam',
+                'email' => 'rabbi@alam.com',
+            ],
+            [
+                'first_name' => 'hossain',
+                'last_name' => 'ali',
+                'email' => 'hossain@ali.com',
+            ],
+            [
+                'first_name' => 'sandam',
+                'last_name' => 'hossain',
+                'email' => 'sadman@hossain.com',
+            ],
+            [
+                'first_name' => 'sagar',
+                'last_name' => 'mahmud',
+                'email' => 'sagar@mahmud.com',
+            ],
         ];
 
         foreach ($users as $user) {

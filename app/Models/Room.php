@@ -6,21 +6,41 @@ use Illuminate\Database\Eloquent\Model;
 
 class Room extends Model
 {
-    protected $fillable = ['user_one_id' , 'user_two_id'];
+    protected $fillable = [
+        'first_user_id',
+        'second_user_id',
+        'name',
+        'avatar',
+        'type',
+        'last_message_at',
+    ];
 
-    public function userOne()
+    protected $casts = [
+        'last_message_at' => 'datetime',
+    ];
+
+    public function firstUser()
     {
-        return $this->belongsTo(User::class , 'user_one_id');
+        return $this->belongsTo(User::class, 'first_user_id');
     }
 
-    public function userTwo()
+    public function secondUser()
     {
-        return $this->belongsTo(User::class , 'user_two_id');
+        return $this->belongsTo(User::class, 'second_user_id');
     }
 
-
-    public function chats()
+    public function participants()
     {
-        return $this->belongsTo(Chat::class);
+        return $this->hasMany(ChatParticipant::class);
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(Chat::class);
+    }
+
+    public function lastMessage()
+    {
+        return $this->hasOne(Chat::class)->latestOfMany();
     }
 }

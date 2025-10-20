@@ -13,10 +13,15 @@ return new class extends Migration
     {
         Schema::create('rooms', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_one_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('user_two_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('first_user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('second_user_id')->constrained('users')->onDelete('cascade');
+            $table->string('name')->nullable(); // For future group chat support
+            $table->string('avatar')->nullable(); // For group chat avatar
+            $table->enum('type', ['private', 'group'])->default('private');
+            $table->timestamp('last_message_at')->nullable();
             $table->timestamps();
-            $table->unique(['user_one_id' , 'user_two_id']);
+            $table->unique(['first_user_id', 'second_user_id']);
+            $table->index(['first_user_id', 'second_user_id']);
         });
     }
 

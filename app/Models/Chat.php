@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,75 +10,102 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Chat extends Model
 {
-    use HasFactory , SoftDeletes;
+    use SoftDeletes;
 
     protected $fillable = [
         'sender_id',
         'receiver_id',
-        'text',
-        'file',
-        'room_id'
+        'room_id',
+        'message',
+        'type',
+        'file_path',
+        'file_name',
+        'file_type',
+        'file_size',
+        'thumbnail_path',
+        'audio_duration',
+        'video_duration',
+        'link_preview',
+        'status',
+        'delivered_at',
+        'read_at',
+        'reply_to_id',
+        'forwarded_from_id',
+        'reactions',
     ];
 
-    protected $hidden = [
-        'create_at',
-        'updated_at',
-        'deleted_at'
+    protected $casts = [
+        'link_preview' => 'array',
+        'reactions' => 'array',
+        'delivered_at' => 'datetime',
+        'read_at' => 'datetime',
     ];
 
-    protected function casts(): array {
-        return [
-            'sender_id'   => 'integer' ,
-            'receiver_id' => 'integer',
-            'text'        => 'string'
-        ];
+    protected $appends = ['short_text', 'humanize_date'];
+
+    public function sender()
+    {
+        return $this->belongsTo(User::class, 'sender_id');
     }
 
-    protected $appends = [
-        'humanize_date',
-        'short_text',
-        'type'
-    ];
-
-
-    public function getFileAttribute($value): ?string
+    public function receiver()
     {
-        if(filter_var($value , FILTER_VALIDATE_URL)){
-            return $value;
+        return $this->belongsTo(User::class, 'receiver_id');
+    }
+
+    public function room()
+    {
+        return $this->belongsTo(Room::class);
+    }
+
+    public function replyTo()
+    {
+        return $this->belongsTo(Chat::class, 'reply_to_id');
+    }
+
+    public function forwardedFrom()
+    {
+        return $this->belongsTo(Chat::class, 'forwarded_from_id');
+    }
+
+    public function deletions()
+    {
+        return $this->hasMany(MessageDeletion::class);
+    }
+
+    public function getShortTextAttribute()
+    {
+        if ($this->type === 'text') {
+            return Str::limit($this->message, 50);
         }
 
-        return $value ? url($value) : null;
+        $typeLabels = [
+            'image' => '📷 Photo',
+            'video' => '🎥 Video',
+            'audio' => '🎵 Audio',
+            'document' => '📄 Document',
+            'link' => '🔗 Link',
+        ];
+
+        return $typeLabels[$this->type] ?? 'Message';
     }
 
-    public function getShortTextAttribute(): string | null
-    {
-        return strlen($this->text) > 20 ? substr($this->text , 0 , 20) . '...' : $this->text;
-    }
-
-    public function getHumanizeDateAttribute(): string
+    public function getHumanizeDateAttribute()
     {
         return $this->created_at->diffForHumans();
     }
 
-    public function getTypeAttribute(): string
+    public function isDeletedFor($userId)
     {
-        if(request()->is('api/*')){
-            return $this->sender_id = auth('api')->id() ? 'sent' : 'received';
-        }
-
-        return $this->sender_id == auth('web')->user()->id ? 'sent' : 'received';
+        return $this->deletions()->where('deleted_by', $userId)->exists();
     }
 
-    public function sender(): BelongsTo {
-        return $this->belongsTo(User::class , 'sender_id');
+    public function scopeNotDeletedBy($query, $userId)
+    {
+        return $query->whereNotIn('id', function ($subQuery) use ($userId) {
+            $subQuery->select('chat_id')
+                ->from('message_deletions')
+                ->where('deleted_by', $userId);
+        });
     }
-
-    public function receiver(): BelongsTo {
-        return $this->belongsTo(User::class , 'receiver_id');
-    }
-
-    public function room(): BelongsTo {
-        return $this->belongsTo(Room::class );
-    }
-
 }

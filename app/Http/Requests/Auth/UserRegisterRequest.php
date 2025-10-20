@@ -25,6 +25,11 @@ class UserRegisterRequest extends FormRequest
             'first_name' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-Z\s]+$/'],
             'last_name' => ['nullable', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-Z\s]+$/'],
             'email' => ['required', 'string', 'email:rfc,dns', 'max:255', 'unique:users,email', 'lowercase'],
+            'phone' => [
+                'required',
+                'phone:BD',
+                'unique:users,phone',
+            ],
             'password' => ['required', 'string', 'confirmed', 'min:8', 'max:64', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
         ];
     }
@@ -43,6 +48,9 @@ class UserRegisterRequest extends FormRequest
             'email.required' => 'Email address is required.',
             'email.email' => 'Please provide a valid email address.',
             'email.unique' => 'This email address is already registered.',
+            'phone.required' => 'Phone number is required.',
+            'phone.unique' => 'This phone number is already registered.',
+            'phone.phone' => 'Please enter a valid phone number.',
             'password.required' => 'Password is required.',
             'password.min' => 'Password must be at least 8 characters long.',
             'password.confirmed' => 'Password confirmation does not match.',
