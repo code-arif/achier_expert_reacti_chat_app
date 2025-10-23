@@ -663,7 +663,7 @@
 
         .chat-container {
             display: flex;
-            height: calc(100vh - 80px);
+            height: calc(100vh - 140px);
             background: white;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             border-radius: 8px;

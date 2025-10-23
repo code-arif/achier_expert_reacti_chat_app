@@ -24,22 +24,20 @@ class ChatController extends Controller
         $keyword = $request->get('keyword');
 
         // Users query
-        $usersQuery = User::select('id', 'f_name', 'l_name', 'email', 'avatar', 'last_activity_at')
-            ->where('id', '!=', $authUser->id)
-            ->where(function ($query) use ($authUser) {
-                $query->whereHas('senders', function ($q) use ($authUser) {
-                    $q->where('receiver_id', $authUser->id);
-                })
-                    ->orWhereHas('receivers', function ($q) use ($authUser) {
-                        $q->where('sender_id', $authUser->id);
-                    });
-            });
+        $usersQuery = User::select('id', 'first_name', 'last_name', 'email', 'avatar', 'last_activity_at')
+            ->whereHas('senders', function ($query) use ($authUser) {
+                $query->where('receiver_id', $authUser->id);
+            })
+            ->orWhereHas('receivers', function ($query) use ($authUser) {
+                $query->where('sender_id', $authUser->id);
+            })
+            ->where('id', '!=', $authUser->id);
 
         // Apply search keyword if exists
         if ($keyword) {
             $usersQuery->where(function ($q) use ($keyword) {
-                $q->where('f_name', 'LIKE', "%{$keyword}%")
-                    ->orWhere('l_name', 'LIKE', "%{$keyword}%")
+                $q->where('first_name', 'LIKE', "%{$keyword}%")
+                    ->orWhere('last_name', 'LIKE', "%{$keyword}%")
                     ->orWhere('email', 'LIKE', "%{$keyword}%");
             });
         }
@@ -137,7 +135,7 @@ class ChatController extends Controller
         ]);
 
         // broadcast(new MessageSendEvent($chat));
-         broadcast(new MessageSendEvent($chat))->toOthers();
+        broadcast(new MessageSendEvent($chat))->toOthers();
 
 
         $data = [
