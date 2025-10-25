@@ -52,7 +52,7 @@ class User extends Authenticatable implements JWTSubject
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'last_activity_at' => 'datetime', 
+        'last_activity_at' => 'datetime',
         'otp_expires_at' => 'datetime',
         'otp_verified_at' => 'datetime',
         'reset_password_token_expire_at' => 'datetime',
@@ -113,45 +113,19 @@ class User extends Authenticatable implements JWTSubject
         return $friends1->union($friends2->getQuery());
     }
 
-    // message send
-    public function sentMessages()
+    public function senders()
     {
         return $this->hasMany(Chat::class, 'sender_id');
     }
 
-    // message received
-    public function receivedMessages()
+    public function receivers()
     {
         return $this->hasMany(Chat::class, 'receiver_id');
     }
 
-
-    // sender id
-    public function senders()
+    public function roomsAsUserOne()
     {
-        return $this->belongsToMany(User::class, 'chats', 'receiver_id', 'sender_id')->distinct();
-    }
-
-    // receiver id
-    public function receivers()
-    {
-        return $this->belongsToMany(User::class, 'chats', 'sender_id', 'receiver_id')->distinct();
-    }
-
-    // chat pertipent for group chat
-    public function chatParticipants()
-    {
-        return $this->hasMany(ChatParticipant::class);
-    }
-
-    // is onlie check
-    public function isOnline()
-    {
-        if (!$this->last_activity_at) {
-            return false;
-        }
-
-        return $this->last_activity_at->diffInMinutes(now()) < 5;
+        return $this->hasMany(Room::class, 'user_one_id');
     }
 
     public function roomsAsUserTwo()

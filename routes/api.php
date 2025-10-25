@@ -80,14 +80,15 @@ Route::group(['middleware' => 'auth:api'], function () {
     // Route::post('/read-all-notifications', [NotificationController::class, 'readAllNotifications']); //mark as read all notification
 
 
-    Route::prefix('auth/chat')->group(function () {
-        Route::get('/user/list', [ChatController::class,'list']);
-        Route::post('/send/{receiver_id}', [ChatController::class,'send']);
-        Route::get('/conversation/{receiver_id}', [ChatController::class,'conversation']);
-        Route::get('room/{receiver_id}', [ChatController::class,'room']);
-        Route::get('/search', [ChatController::class,'search']);
-        Route::get('/seen/all/{receiver_id}', [ChatController::class,'seedAll']);
-        Route::get('/seen/single/{chat_id}', [ChatController::class,'seenSingle']);
-        Route::delete('/delete/{receiver_id}', [ChatController::class,'deleteChat']);
+    Route::middleware(['auth:api'])->controller(ChatController::class)->prefix('auth/chat')->group(function () {
+        Route::get('/list', 'list'); // working
+        Route::post('/send/{receiver_id}', 'send'); // working
+        Route::get('/conversation/{receiver_id}', 'conversation'); // working
+        Route::get('room/{receiver_id}', 'room');
+        Route::get('/search', 'search'); // working
+        Route::get('/seen/all/{receiver_id}', 'seenAll'); // working
+        Route::get('/seen/single/{chat_id}', 'seenSingle'); // working
+        Route::delete('/delete/{receiver_id}', 'deleteChat'); // working
+        Route::delete('/delete/chat/messages', 'deleteMessages');
     });
 });

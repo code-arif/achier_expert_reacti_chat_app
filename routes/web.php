@@ -98,9 +98,9 @@ Route::get('/run-storage-link', function () {
 });
 
 
-//Social login test routes
-Route::get('social-login/{provider}',[SocialLoginController::class,'RedirectToProvider'])->name('social.login');
-Route::get('social-login/{provider}/callback',[SocialLoginController::class,'HandleProviderCallback']);
+// //Social login test routes
+// Route::get('social-login/{provider}',[SocialLoginController::class,'RedirectToProvider'])->name('social.login');
+// Route::get('social-login/{provider}/callback',[SocialLoginController::class,'HandleProviderCallback']);
 
 
 

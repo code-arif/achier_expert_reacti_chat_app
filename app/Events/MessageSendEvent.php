@@ -18,6 +18,7 @@ class MessageSendEvent implements ShouldBroadcastNow
     public function __construct($data)
     {
         $this->data = $data;
+
         Log::info("Broadcasting message event", ['chat' => $this->data]);
     }
 
@@ -33,9 +34,5 @@ class MessageSendEvent implements ShouldBroadcastNow
     /**
      * Custom event name for frontend
      */
-    public function broadcastAs(): string
-    {
-        return 'MessageSendEvent';
-    }
-}
 
+}

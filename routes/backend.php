@@ -19,47 +19,15 @@ Route::middleware(['auth', 'admin'])->group(function () {
 });
 
 
-// Route::prefix('chat')->name('admin.chat.')->group(function () {
-//     Route::get('/', [ChatManageController::class, 'index'])->name('index');
-//     Route::get('/list', [ChatManageController::class, 'list'])->name('list');
-//     Route::post('/send/{receiver_id}', [ChatManageController::class, 'send'])->name('send');
-//     Route::get('/conversation/{receiver_id}', [ChatManageController::class, 'conversation'])->name('conversation');
-//     Route::get('/room/{receiver_id}', [ChatManageController::class, 'room'])->name('room');
-//     Route::get('/search', [ChatManageController::class, 'search'])->name('search');
-//     Route::get('/seen/all/{receiver_id}', [ChatManageController::class, 'seenAll'])->name('seen.all');
-//     Route::get('/seen/single/{chat_id}', [ChatManageController::class, 'seenSingle'])->name('seen.single');
-// });
-
-Route::prefix('chat')->name('admin.chat.')->middleware(['auth'])->group(function () {
-    // Main chat page
-    Route::get('/', [ChatManageController::class, 'index'])->name('index');
-
-    // Get chat list with unread counts
-    Route::get('/list', [ChatManageController::class, 'list'])->name('list');
-
-    // Search users to start new conversation
-    Route::get('/search', [ChatManageController::class, 'search'])->name('search');
-
-    // Get conversation with a user
-    Route::get('/conversation/{receiver_id}', [ChatManageController::class, 'conversation'])->name('conversation');
-
-    // Send message (text, image, video, audio, document, link)
-    Route::post('/send/{receiver_id}', [ChatManageController::class, 'send'])->name('send');
-
-    // Mark messages as read
-    Route::post('/mark-as-read/{room_id}', [ChatManageController::class, 'markAsRead'])->name('mark.read');
-
-    // Delete single message
-    Route::delete('/message/{chat_id}', [ChatManageController::class, 'deleteMessage'])->name('message.delete');
-
-    // Delete entire conversation
-    Route::delete('/conversation/delete/{receiver_id}', [ChatManageController::class, 'deleteConversation'])->name('conversation.delete');
-
-    // Typing indicator
-    Route::post('/typing/{room_id}', [ChatManageController::class, 'typing'])->name('typing');
-
-    // Load more messages (pagination)
-    Route::get('/messages/{room_id}', [ChatManageController::class, 'loadMoreMessages'])->name('messages.load');
+Route::controller(ChatManageController::class)->prefix('chat')->name('admin.chat.')->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::get('/list', 'list')->name('list');
+    Route::post('/send/{receiver_id}', 'send')->name('send');
+    Route::get('/conversation/{receiver_id}', 'conversation')->name('conversation');
+    Route::get('/room/{receiver_id}', 'room');
+    Route::get('/search', 'search')->name('search');
+    Route::get('/seen/all/{receiver_id}', 'seenAll');
+    Route::get('/seen/single/{chat_id}', 'seenSingle');
 });
 
 
