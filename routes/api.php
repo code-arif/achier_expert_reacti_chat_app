@@ -1,17 +1,18 @@
 <?php
 
-use App\Http\Controllers\Api\Friend\FindFriendController;
-use App\Http\Controllers\Api\Friend\FriendBlockController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Chat\ChatController;
+use App\Http\Controllers\Api\User\UserController;
+use App\Http\Controllers\Api\Chat\GroupChatController;
+use App\Http\Controllers\Api\Friend\FriendsController;
 use App\Http\Controllers\Api\Auth\SocialLoginController;
 use App\Http\Controllers\Api\Auth\UserProfileController;
+use App\Http\Controllers\Api\Friend\FindFriendController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
+use App\Http\Controllers\Api\Friend\FriendBlockController;
 use App\Http\Controllers\Api\Auth\AuthenticationController;
 use App\Http\Controllers\Api\Friend\FriendRequestController;
-use App\Http\Controllers\Api\Friend\FriendsController;
 use App\Http\Controllers\Api\Notification\NotificationController;
-use App\Http\Controllers\Api\User\UserController;
 
 //health-check
 Route::get("/check", function () {
@@ -79,7 +80,6 @@ Route::group(['middleware' => 'auth:api'], function () {
     // Route::post('/read-notification/{id}', [NotificationController::class, 'readNotification']); //mark as read single notification
     // Route::post('/read-all-notifications', [NotificationController::class, 'readAllNotifications']); //mark as read all notification
 
-
     Route::middleware(['auth:api'])->controller(ChatController::class)->prefix('auth/chat')->group(function () {
         Route::get('/list', 'list'); // working
         Route::post('/send/{receiver_id}', 'send'); // working
@@ -89,6 +89,25 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('/seen/all/{receiver_id}', 'seenAll'); // working
         Route::get('/seen/single/{chat_id}', 'seenSingle'); // working
         Route::delete('/delete/{receiver_id}', 'deleteChat'); // working
-        Route::delete('/delete/chat/messages', 'deleteMessages');
+        Route::delete('/delete/chat/messages', 'deleteMessages'); // working
+    });
+
+
+    // New group chat routes
+    Route::middleware(['auth:api'])->controller(GroupChatController::class)->prefix('auth/group')->group(function () {
+        Route::post('/create', 'createGroup'); // working
+        Route::get('/list', 'listGroups'); // working
+        Route::get('/{group_id}', 'groupDetails'); // working
+        Route::post('/{group_id}/send', 'sendMessage'); // working
+        Route::post('/{group_id}/message/{message_id}', 'editMessage'); // working
+        Route::get('/{group_id}/messages', 'getMessages'); //working
+        Route::post('/{group_id}/read', 'markAsRead'); // working
+        Route::post('/{group_id}/add-members', 'addMembers'); // working
+        Route::delete('/{group_id}/remove-member/{user_id}', 'removeMember'); // working
+        Route::post('/{group_id}/make-admin/{user_id}', 'makeAdmin'); // working
+        Route::post('/{group_id}/leave', 'leaveGroup'); // working
+        Route::delete('/{group_id}/delete', 'deleteGroup'); // working
+        Route::delete('/{group_id}/delete-messages', 'deleteMessages'); //working
+        Route::post('/{group_id}/update', 'updateGroup'); // working
     });
 });

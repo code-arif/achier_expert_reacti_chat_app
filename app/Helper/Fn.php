@@ -8,6 +8,7 @@ function getFileName($file): string
 {
     return time().'_'.pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 }
+
 function getEmailName($email): string
 {
     $parts = explode('@', $email);

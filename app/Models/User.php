@@ -137,4 +137,27 @@ class User extends Authenticatable implements JWTSubject
     {
         return Room::where('user_one_id', $this->id)->orWhere('user_two_id', $this->id);
     }
+
+    // New relationships for group chat
+    public function groupMemberships()
+    {
+        return $this->hasMany(GroupMember::class, 'user_id');
+    }
+
+    public function groups()
+    {
+        return $this->belongsToMany(Group::class, 'group_members', 'user_id', 'group_id')
+            ->withPivot('role', 'joined_at')
+            ->withTimestamps();
+    }
+
+    public function createdGroups()
+    {
+        return $this->hasMany(Group::class, 'created_by');
+    }
+
+    public function groupMessages()
+    {
+        return $this->hasMany(GroupMessage::class, 'sender_id');
+    }
 }

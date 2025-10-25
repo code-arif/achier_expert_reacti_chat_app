@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Room;
+use App\Models\Group;
 use Illuminate\Support\Facades\Broadcast;
 
 /* Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
@@ -32,3 +33,12 @@ Broadcast::channel('chat-sender.{sender_id}', function ($user, $sender_id) {
     return (int) $user->id === (int) $sender_id;
 });
 
+// New group channel
+Broadcast::channel('group.{group_id}', function ($user, $group_id) {
+    $group = Group::find($group_id);
+    if (!$group) {
+        return false;
+    }
+    // Check if user is member of this group
+    return $group->isMember($user->id);
+});
