@@ -15,6 +15,6 @@ jobs:
         uses: SamKirkland/FTP-Deploy-Action@4.3.0
         with:
           server: ftp.softvencefsd.xyz
-          username: app@achiar.softvencefsd.xyz
-          password: (=}TVXQ%w#z(*U!(
+          username: achiar@achiar.softvencefsd.xyz
+          password: WUr8]%aA+q7B[H~}
 
