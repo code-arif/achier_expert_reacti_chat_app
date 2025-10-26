@@ -36,7 +36,7 @@ class UserSeeder extends Seeder
             'is_apple_signin' => false,
         ]);
 
-        // --- 100 Regular Users ---
+        // --- 100 Regular Users data
         $faker = Faker::create();
 
         for ($i = 1; $i <= 100; $i++) {
