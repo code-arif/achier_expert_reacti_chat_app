@@ -7,21 +7,61 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ChatGroupResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(Request $request): array
     {
         return [
-            "id" => $this->id,
-            "name" => $this->name,
-            "description" => $this->description,
-            "avatar" => $this->avatar ? asset($this->avatar) : asset('default/default_image.jpg'),
-            "created_at"=> $this->created_at?->diffForHumans(),
-            "updated_at"=> $this->updated_at?->diffForHumans(),
-            "deleted_at"=> $this->deleted_at?->diffForHumans(),
+            'id' => $this->id,
+            'name' => $this->name,
+            'description' => $this->description,
+            'avatar' => $this->avatar ? asset($this->avatar) : asset('default/default_image.jpg'),
+            'created_by' => $this->created_by,
+            'created_at' => $this->created_at->toISOString(),
+            'updated_at' => $this->updated_at->toISOString(),
+            'deleted_at' => $this->deleted_at ? $this->deleted_at->toISOString() : null,
+
+            // Last message with relative time
+            'last_message' => $this->when(isset($this->last_message), function () {
+                if (!$this->last_message) return null;
+
+                return [
+                    'id' => $this->last_message['id'] ?? null,
+                    'text' => $this->last_message['text'] ?? null,
+                    'file' => $this->last_message['file'] ?? null,
+                    'created_at' => $this->last_message['created_at'] ?? null,
+                    'relative_time' => $this->last_message['relative_time'] ?? null,
+                ];
+            }),
+
+            'unread_count' => $this->unread_count ?? 0,
+            'member_count' => $this->member_count ?? $this->members->count(),
+
+            'creator' => $this->whenLoaded('creator', function () {
+                return [
+                    'id' => $this->creator->id,
+                    'first_name' => $this->creator->first_name,
+                    'last_name' => $this->creator->last_name,
+                    'avatar' => $this->creator->avatar ? asset($this->creator->avatar) : asset('default/default_image.jpg'),
+                ];
+            }),
+
+            'members' => $this->whenLoaded('members', function () {
+                return $this->members->map(function ($member) {
+                    return [
+                        'id' => $member->id,
+                        'group_id' => $member->group_id,
+                        'user_id' => $member->user_id,
+                        'role' => $member->role,
+                        'joined_at' => $member->created_at->toISOString(),
+                        'user' => [
+                            'id' => $member->user->id,
+                            'first_name' => $member->user->first_name,
+                            'last_name' => $member->user->last_name,
+                            'avatar' => $member->user->avatar ? asset($member->user->avatar) : asset('default/default_image.jpg'),
+                            'last_activity_at' => $member->user->last_activity_at ? $member->user->last_activity_at->toISOString() : null,
+                        ],
+                    ];
+                });
+            }),
         ];
     }
 }

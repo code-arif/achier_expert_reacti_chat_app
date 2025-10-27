@@ -2,6 +2,7 @@
 
 use App\Models\Room;
 use App\Models\Group;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Broadcast;
 
 /* Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
@@ -34,11 +35,16 @@ Broadcast::channel('chat-sender.{sender_id}', function ($user, $sender_id) {
 });
 
 // New group channel
-Broadcast::channel('group.{group_id}', function ($user, $group_id) {
-    $group = Group::find($group_id);
-    if (!$group) {
-        return false;
-    }
-    // Check if user is member of this group
-    return $group->isMember($user->id);
+// Broadcast::channel('group-message.{userId}', function ($user, $userId) {
+//     return (int) $user->id === (int) $userId;
+// });
+
+Broadcast::channel('group-message.{userId}', function ($user, $userId) {
+    Log::info('Broadcasting auth attempt', [
+        'user_id' => $user->id,
+        'channel_user_id' => $userId,
+        'match' => (int) $user->id === (int) $userId
+    ]);
+
+    return (int) $user->id === (int) $userId;
 });
