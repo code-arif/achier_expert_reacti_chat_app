@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
@@ -27,6 +28,7 @@ class UserProfileController extends Controller
             if (!$user) {
                 return $this->error([], 'User not found.', 200);
             }
+            // $profile = User::with('friends')->where('id', $user->id)->first();
 
             return $this->success(new UserResource($user), 'User Profile Retrieved Successfully', 200);
         } catch (Exception $e) {
