@@ -18,15 +18,7 @@ class UserResource extends JsonResource
             'bio' => $this->bio ?? null,
             'phone' => $this->phone ?? null,
             'avatar' => $this->avatar ? asset($this->avatar) : asset('default/default_image.jpg'),
-
-
-
-            // Or use count aggregation (more efficient)
             'total_friends' => $this->friends_count ?? 0,
-
-            // Count of groups
-            // 'total_groups'  => $this->whenLoaded('groups', fn() => $this->groups->count()),
-            // Or use count aggregation
             'total_groups'  => $this->groups_count ?? 0,
             'created_at' => $this->created_at ? $this->created_at->diffForHumans() : null
         ];
