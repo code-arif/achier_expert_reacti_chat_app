@@ -50,6 +50,9 @@ Route::group(['middleware' => 'auth:api'], function () {
     // find contact
     Route::post('/find-contacts', [FindFriendController::class, 'findContacts']);
 
+    // user list
+    Route::get('/user-list', [UserController::class, 'userList']);
+
 
     // Friend request system
     Route::prefix('/friends')->group(function () {
