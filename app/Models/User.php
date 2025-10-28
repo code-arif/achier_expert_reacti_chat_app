@@ -113,6 +113,20 @@ class User extends Authenticatable implements JWTSubject
         return $friends1->union($friends2->getQuery());
     }
 
+    public function friendOf()
+    {
+        return $this->belongsToMany(User::class, 'friends', 'friend_id', 'user_id')
+            ->withTimestamps();
+    }
+
+    // Optional: Combined friends (both directions)
+    public function allFriends()
+    {
+        return $this->friends()->orWhere(function ($query) {
+            $query->whereIn('friend_id', $this->friendOf()->pluck('user_id'));
+        });
+    }
+
     public function senders()
     {
         return $this->hasMany(Chat::class, 'sender_id');

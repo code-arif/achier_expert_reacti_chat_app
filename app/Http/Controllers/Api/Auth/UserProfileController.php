@@ -25,10 +25,21 @@ class UserProfileController extends Controller
     {
         try {
             $user = auth('api')->user();
+
             if (!$user) {
-                return $this->error([], 'User not found.', 200);
+                return $this->error([], 'User not found.', 401);
             }
-            // $profile = User::with('friends')->where('id', $user->id)->first();
+
+            // Efficient: Load with count
+            $user = User::withCount([
+                'friends as friends_count',
+                'friendOf as friend_of_count',
+                'groups as groups_count'
+            ])
+                ->find($user->id);
+
+            // Total friends = sent + received
+            $user->total_friends = ($user->friends_count ?? 0) + ($user->friend_of_count ?? 0);
 
             return $this->success(new UserResource($user), 'User Profile Retrieved Successfully', 200);
         } catch (Exception $e) {
