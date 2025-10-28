@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\Api\React\User\Auth\SocialLoginController;
 
 
@@ -102,6 +103,8 @@ Route::get('/run-storage-link', function () {
 // Route::get('social-login/{provider}',[SocialLoginController::class,'RedirectToProvider'])->name('social.login');
 // Route::get('social-login/{provider}/callback',[SocialLoginController::class,'HandleProviderCallback']);
 
+// Broadcasting authentication route
+Broadcast::routes(['middleware' => ['web', 'auth:web']]);
 
 
 require __DIR__.'/auth.php';

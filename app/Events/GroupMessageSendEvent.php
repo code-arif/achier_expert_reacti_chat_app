@@ -42,8 +42,6 @@ class GroupMessageSendEvent implements ShouldBroadcastNow
             ]);
 
             foreach ($group->members as $member) {
-                // Testing এর জন্য sender কেও include করুন
-                // পরে আবার বাদ দিতে পারবেন
                 $channelName = "group-message.{$member->user_id}";
                 $channels[] = new PrivateChannel($channelName);
 
@@ -93,8 +91,5 @@ class GroupMessageSendEvent implements ShouldBroadcastNow
     /**
      * The event's broadcast name.
      */
-    public function broadcastAs(): string
-    {
-        return 'GroupMessageSendEvent';
-    }
+   
 }

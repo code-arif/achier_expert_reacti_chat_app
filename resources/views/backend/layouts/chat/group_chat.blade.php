@@ -1511,76 +1511,170 @@
 
 
         // Real-time message listening with Laravel Echo
-        // let userId = {{ auth('web')->user()->id ?? 'null' }};
-
-        // console.log('🔍 User ID:', userId);
-        // console.log('🔍 Echo available:', typeof Echo !== 'undefined');
-
-        // if (userId && typeof Echo !== 'undefined') {
-        //     document.addEventListener('DOMContentLoaded', function() {
-        //         console.log('✅ Setting up Echo listeners for user:', userId);
-
-        //         Echo.private(`group-message.${userId}`)
-        //             .listen('GroupMessageSendEvent', function(e) {
-        //                 console.log('🎉 Received group message event:', e);
-        //                 console.log('📨 Message data:', e.message);
-
-        //                 if (e.message) {
-        //                     let messageGroupId = e.message.group_id;
-
-        //                     // Show notification
-        //                     if (e.message.group && e.message.group.name) {
-        //                         console.log('📢 Showing notification for:', e.message.group.name);
-        //                         toastr.info('New message in ' + e.message.group.name);
-        //                     }
-
-        //                     // If current group is open, reload messages
-        //                     if (currentGroupId == messageGroupId) {
-        //                         console.log('🔄 Reloading messages for current group:', messageGroupId);
-        //                         loadGroupMessages(currentGroupId);
-        //                         markAsRead(currentGroupId);
-        //                     } else {
-        //                         console.log('ℹ️ Message for different group. Current:', currentGroupId,
-        //                             'Message group:', messageGroupId);
-        //                     }
-
-        //                     // Always refresh group list
-        //                     console.log('🔄 Refreshing group list');
-        //                     loadGroupList();
-        //                 }
-        //             })
-        //             .error(function(error) {
-        //                 console.error('❌ Echo error:', error);
-        //             });
-
-        //         console.log('✅ Echo listeners setup complete for channel: group-message.' + userId);
-        //     });
-        // } else {
-        //     if (!userId) {
-        //         console.warn('⚠️ User not authenticated');
-        //     }
-        //     if (typeof Echo === 'undefined') {
-        //         console.warn('⚠️ Echo not available');
-        //     }
-        // }
-
-        // var user_id = `{{ auth('web')->check() ? auth('web')->user()->id : null }}`;
         let userId = {{ auth('web')->user()->id ?? 'null' }};
 
-        if (user_id) {
+        console.log('🔍 User ID:', userId);
+        console.log('🔍 Echo available:', typeof Echo !== 'undefined');
+
+        if (userId && typeof Echo !== 'undefined') {
             document.addEventListener('DOMContentLoaded', function() {
-                Echo.private(`group-message.${user_id}`)
+                console.log('✅ Setting up Echo listeners for user:', userId);
+
+                Echo.private(`group-message.${userId}`)
                     .listen('GroupMessageSendEvent', function(e) {
-                        console.log('Received event:', e); // Debugging
-                        toastr.success(e.data.text ?? "New file received");
-                        // let receiver_id = document.getElementById('ReceiverId').value;
-                        let messageGroupId = e.message.group_id;
-                        if (receiver_id) {
-                            userChat(receiver_id);
-                            userList();
+                        console.log('🎉 Received group message event:', e);
+                        console.log('📨 Message data:', e.message);
+
+                        if (e.message) {
+                            let messageGroupId = e.message.group_id;
+
+                            // Show notification
+                            if (e.message.group && e.message.group.name) {
+                                console.log('📢 Showing notification for:', e.message.group.name);
+                                toastr.info('New message in ' + e.message.group.name);
+                            }
+
+                            // If current group is open, reload messages
+                            if (currentGroupId == messageGroupId) {
+                                console.log('🔄 Reloading messages for current group:', messageGroupId);
+                                loadGroupMessages(currentGroupId);
+                                markAsRead(currentGroupId);
+                            } else {
+                                console.log('ℹ️ Message for different group. Current:', currentGroupId,
+                                    'Message group:', messageGroupId);
+                            }
+
+                            // Always refresh group list
+                            console.log('🔄 Refreshing group list');
+                            loadGroupList();
                         }
+                    })
+                    .error(function(error) {
+                        console.error('❌ Echo error:', error);
                     });
+
+                console.log('✅ Echo listeners setup complete for channel: group-message.' + userId);
             });
+        } else {
+            if (!userId) {
+                console.warn('⚠️ User not authenticated');
+            }
+            if (typeof Echo === 'undefined') {
+                console.warn('⚠️ Echo not available');
+            }
         }
+
+        // var userId = `{{ auth('web')->check() ? auth('web')->user()->id : null }}`;
+
+        // if (userId) {
+        //     document.addEventListener('DOMContentLoaded', function() {
+        //         Echo.private(`group-message.${userId}`)
+        //             .listen('GroupMessageSendEvent', function(e) {
+        //                 console.log('Received event:', e);
+        //                 toastr.success(e.data.text ?? "New file received");
+        //                 let receiver_id = document.getElementById('ReceiverId').value;
+        //                 if (receiver_id) {
+        //                     userChat(receiver_id);
+        //                     userList();
+        //                 }
+        //             });
+        //     });
+        // }
     </script>
+
+    {{-- <script>
+        // ✅ COMPLETE GROUP CHAT ECHO SETUP
+        let userId = {{ auth('web')->user()->id ?? 'null' }};
+
+        console.log('🚀 Initializing Group Chat Echo');
+        console.log('👤 User ID:', userId);
+        console.log('🔌 Echo available:', typeof Echo !== 'undefined');
+
+        if (userId && typeof Echo !== 'undefined') {
+
+            // Wait for DOM to be ready
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('📡 Setting up Echo listener...');
+
+                // Test Echo connection first
+                Echo.connector.pusher.connection.bind('state_change', function(states) {
+                    console.log('🔄 Pusher state:', states.current);
+                });
+
+                Echo.connector.pusher.connection.bind('connected', function() {
+                    console.log('✅ Pusher connected successfully');
+                    console.log('🎯 Subscribing to: group-message.' + userId);
+                });
+
+                // Subscribe to private channel
+                const channel = Echo.private(`group-message.${userId}`);
+
+                // Check subscription success
+                channel.subscribed(() => {
+                    console.log('✅ Successfully subscribed to group-message.' + userId);
+                });
+
+                channel.error((error) => {
+                    console.error('❌ Subscription error:', error);
+                    console.error(
+                        '💡 Check: 1) Broadcasting routes enabled 2) CSRF token present 3) User authenticated'
+                        );
+                });
+
+                // Listen for group messages
+                channel.listen('GroupMessageSendEvent', function(e) {
+                    console.log('🎉 GROUP MESSAGE RECEIVED!');
+                    console.log('📨 Full event data:', e);
+
+                    if (!e.message) {
+                        console.warn('⚠️ No message data in event');
+                        return;
+                    }
+
+                    let messageGroupId = e.message.group_id;
+                    let senderId = e.message.sender_id;
+
+                    console.log('📍 Message group:', messageGroupId);
+                    console.log('📍 Current group:', currentGroupId);
+                    console.log('👤 Sender:', senderId, '| Current user:', userId);
+
+                    // Don't process own messages
+                    if (senderId !== userId) {
+                        // Show notification
+                        if (e.message.group && e.message.group.name) {
+                            let senderName = e.message.sender ?
+                                `${e.message.sender.first_name} ${e.message.sender.last_name}`.trim() :
+                                'Someone';
+
+                            toastr.info(`${senderName} sent a message in ${e.message.group.name}`);
+                        }
+                    }
+
+                    // If viewing this group, reload messages
+                    if (currentGroupId == messageGroupId) {
+                        console.log('🔄 Reloading messages for current group');
+                        loadGroupMessages(currentGroupId);
+
+                        if (senderId !== userId) {
+                            markAsRead(currentGroupId);
+                        }
+                    }
+
+                    // Always refresh group list
+                    console.log('🔄 Refreshing group list');
+                    loadGroupList();
+                });
+
+                console.log('✅ Echo listener setup complete');
+            });
+
+        } else {
+            if (!userId) {
+                console.error('❌ User not authenticated');
+            }
+            if (typeof Echo === 'undefined') {
+                console.error('❌ Echo not loaded. Check app.js is imported.');
+            }
+        }
+    </script> --}}
 @endpush
