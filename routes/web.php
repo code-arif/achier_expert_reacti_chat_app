@@ -3,10 +3,10 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Broadcast;
-use App\Http\Controllers\Api\React\User\Auth\SocialLoginController;
+use App\Models\DynamicPage;
 
 
-Route::get('/',function (){
+Route::get('/', function () {
     return view('welcome');
 });
 
@@ -98,6 +98,18 @@ Route::get('/run-storage-link', function () {
     }
 });
 
+Route::get('privacy-policy', function () {
+    $data = DynamicPage::where('page_slug', 'privacy-policy')->first();
+
+    if (!$data) {
+        $content = 'Privacy Policy data not found.';
+    } else {
+        $content = $data->page_content;
+    }
+
+    return view('privacy-policy', compact('content'));
+})->name('privacy-policy');
+
 
 // //Social login test routes
 // Route::get('social-login/{provider}',[SocialLoginController::class,'RedirectToProvider'])->name('social.login');
@@ -107,7 +119,4 @@ Route::get('/run-storage-link', function () {
 Broadcast::routes(['middleware' => ['web', 'auth:web']]);
 
 
-require __DIR__.'/auth.php';
-
-
-
+require __DIR__ . '/auth.php';

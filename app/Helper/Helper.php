@@ -2,6 +2,7 @@
 
 namespace App\Helper;
 
+use App\Models\User;
 use Illuminate\Support\Str;
 
 class Helper
@@ -123,5 +124,22 @@ class Helper
         if ($filePath && file_exists(public_path($filePath))) {
             unlink(public_path($filePath));
         }
+    }
+
+    // create username
+    public static function generateUniqueUsername($firstName, $lastName)
+    {
+        $base = Str::slug("{$firstName} {$lastName}", '_');
+        $username = "@{$base}";
+
+        $counter = 1;
+        $original = $username;
+
+        while (User::where('username', $username)->exists()) {
+            $username = "@{$base}{$counter}";
+            $counter++;
+        }
+
+        return $username;
     }
 }

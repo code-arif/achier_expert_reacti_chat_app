@@ -116,14 +116,11 @@ class UserProfileController extends Controller
 
             // Verify current password
             if (!Hash::check($request->current_password, $user->password)) {
-                return $this->error([], 'Current password is incorrect.', 401);
+                return $this->error([], 'Current password is incorrect.', 422);
             }
 
             // Update password
             $user->update(['password' => Hash::make($request->password)]);
-
-            // Optional: Invalidate all tokens except current one
-            // auth('api')->refresh();
 
             return $this->success([], 'Password updated successfully.', 200);
         } catch (Exception $e) {

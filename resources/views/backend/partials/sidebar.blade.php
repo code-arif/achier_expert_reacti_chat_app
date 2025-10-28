@@ -64,6 +64,20 @@
                         <span class="side-menu__label">Group Chat</span>
                     </a>
                 </li>
+
+                {{-- group chat --}}
+                <li class="slide">
+                    <a class="side-menu__item {{ request()->routeIs('admin.dynamic_page.index') ? 'has-link' : '' }}"
+                        href="{{ route('admin.dynamic_page.index') }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" width="24" height="24"
+                            fill="currentColor" viewBox="0 0 24 24">
+                            <path
+                                d="M20.59 13.41l-7.59 7.59c-.36.36-.86.59-1.41.59s-1.05-.23-1.41-.59l-7.59-7.59c-.36-.36-.59-.86-.59-1.41s.23-1.05.59-1.41l7.59-7.59c.36-.36.86-.59 1.41-.59s1.05.23 1.41.59l7.59 7.59c.36.36.59.86.59 1.41s-.23 1.05-.59 1.41zM12 4.41L4.41 12 12 19.59 19.59 12 12 4.41z" />
+                            <circle cx="12" cy="12" r="2" />
+                        </svg>
+                        <span class="side-menu__label">Privecy Policy</span>
+                    </a>
+                </li>
             </ul>
             <div class="slide-right" id="slide-right"><svg xmlns="http://www.w3.org/2000/svg" fill="#7b8191"
                     width="24" height="24" viewBox="0 0 24 24">

@@ -30,27 +30,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/seen/single/{chat_id}', 'seenSingle');
     });
 
-
-    // New group chat routes
-    // Route::prefix('group')->name('admin.group.')->group(function () {
-    //     Route::get('/chat', [AdminGroupChatController::class, 'index'])->name('chat'); // Show group chat page
-    //     Route::get('/users/list', [AdminGroupChatController::class, 'getUsersList'])->name('users.list'); // get users list for group creation
-    //     Route::post('/create', [AdminGroupChatController::class, 'createGroup'])->name('create'); // working
-    //     Route::get('/list', [AdminGroupChatController::class, 'listGroups'])->name('list');
-    //     Route::get('/{group_id}', [AdminGroupChatController::class, 'groupDetails'])->name('details');
-    //     Route::post('/{group_id}/send', [AdminGroupChatController::class, 'sendMessage'])->name('send.message');
-    //     Route::post('/{group_id}/message/{message_id}', [AdminGroupChatController::class, 'editMessage'])->name('edit.message');
-    //     Route::get('/{group_id}/messages', [AdminGroupChatController::class, 'getMessages'])->name('conversations');
-    //     Route::post('/{group_id}/read', [AdminGroupChatController::class, 'markAsRead'])->name('message.mark.as.read');
-    //     Route::post('/{group_id}/add-members', [AdminGroupChatController::class, 'addMembers'])->name('add.member');
-    //     Route::delete('/{group_id}/remove-member/{user_id}', [AdminGroupChatController::class, 'removeMember'])->name('remove.member');
-    //     Route::post('/{group_id}/make-admin/{user_id}', [AdminGroupChatController::class, 'makeAdmin'])->name('make.admin');
-    //     Route::post('/{group_id}/leave', [AdminGroupChatController::class, 'leaveGroup'])->name('leave');
-    //     Route::delete('/{group_id}/delete', [AdminGroupChatController::class, 'deleteGroup'])->name('delete');
-    //     Route::delete('/{group_id}/delete-messages', [AdminGroupChatController::class, 'deleteMessages'])->name('delete.messages');
-    //     Route::post('/{group_id}/update', [AdminGroupChatController::class, 'updateGroup'])->name('update.group');
-    // });
-
     // Group Chat Routes
     Route::prefix('group')->name('group.')->group(function () {
         Route::get('/chat', [AdminGroupChatController::class, 'index'])->name('chat');

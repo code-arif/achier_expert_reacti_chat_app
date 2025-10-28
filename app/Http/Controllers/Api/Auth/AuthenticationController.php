@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Cache;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\Auth\UserRegisterRequest;
+use App\Helper\Helper;
 
 class AuthenticationController extends Controller
 {
@@ -30,7 +31,7 @@ class AuthenticationController extends Controller
         try {
             $email = strtolower(trim($request->email));
 
-            // Check if OTP already sent recently (rate limiting)
+            // Rate limiting
             if (Cache::has("register_otp_{$email}")) {
                 $remainingTime = Cache::get("register_otp_time_{$email}") - now()->timestamp;
                 if ($remainingTime > 0) {
@@ -38,41 +39,46 @@ class AuthenticationController extends Controller
                 }
             }
 
-            // Generate secure OTP
+            // Generate unique username
+            $username = Helper::generateUniqueUsername($request->first_name, $request->last_name);
+
+            // Generate OTP
             $otp = random_int(1000, 9999);
             $otpExpiresAt = now()->addMinutes(5);
 
-            // Prepare cache data
+            // Cache data (including username)
             $cacheData = [
                 'first_name' => $request->first_name,
-                'last_name' => $request->last_name,
-                'email' => $email,
-                'phone' => $request->phone,
-                'password' => Hash::make($request->password),
-                'otp' => $otp,
+                'last_name'  => $request->last_name,
+                'email'      => $email,
+                'phone'      => $request->phone,
+                'password'   => Hash::make($request->password),
+                'username'   => $username, // Add username
+                'otp'        => $otp,
                 'otp_expires_at' => $otpExpiresAt,
-                'attempts' => 0,
+                'attempts'   => 0,
             ];
 
-            // Cache with TTL (5 minutes)
             Cache::put("register_otp_{$email}", $otp, 300);
             Cache::put("register_data_{$email}", $cacheData, 300);
             Cache::put("register_otp_time_{$email}", now()->addMinutes(2)->timestamp, 120);
 
-            // Queue/send the email (runs in background)
-            Mail::to($email)->send(new EmailVerifyMail($otp, $request->first_name ?? 'User', 'Verify Your Email Address'));
+            // Send OTP
+            Mail::to($email)->send(new EmailVerifyMail(
+                $otp,
+                $request->first_name ?? 'User',
+                'Verify Your Email Address'
+            ));
 
             return $this->success([
                 'email' => $email,
-                'expires_in' => 5 . ' minutes',
-                'otp' => $otp . ' For testing purposes only, remove in production.',
-            ], 'OTP sent successfully. Please check your email to complete registration.');
+                'expires_in' => '5 minutes',
+                'username' => $username, // Optional: show in response
+                'otp' => $otp . ' (Testing only)',
+            ], 'OTP sent successfully. Please check your email.');
         } catch (Exception $e) {
-            Log::error('Registration OTP Error: ' . $e->getMessage(), [
-                'email' => $request->email ?? 'N/A',
-                'trace' => $e->getTraceAsString()
-            ]);
-            return $this->error([], 'Failed to send verification code. Please try again later.', 500);
+            Log::error('Registration OTP Error: ' . $e->getMessage());
+            return $this->error([], 'Failed to send verification code.', 500);
         }
     }
 
@@ -156,6 +162,7 @@ class AuthenticationController extends Controller
             $user = User::create([
                 'first_name' => $cachedData['first_name'],
                 'last_name' => $cachedData['last_name'],
+                'username'   => $cachedData['username'],
                 'email' => $cachedData['email'],
                 'phone' => $cachedData['phone'],
                 'password' => $cachedData['password'],
