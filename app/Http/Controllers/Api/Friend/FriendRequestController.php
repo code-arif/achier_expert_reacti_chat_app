@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\FriendRequestResource;
+use App\Http\Resources\FriendRequestCollection;
 
 class FriendRequestController extends Controller
 {
@@ -194,19 +195,40 @@ class FriendRequestController extends Controller
     /**
      * Get all friend requests for the logged-in user
      */
-    public function getRequests()
+    public function getRequests(Request $request)
     {
         $user = auth('api')->user();
 
-        $requests = FriendRequest::with('sender:id,first_name,last_name,avatar,username')
+        $perPage = $request->get('per_page', 10);
+
+        $requests = FriendRequest::with('sender:id,first_name,last_name,username,avatar')
             ->where('receiver_id', $user->id)
             ->where('status', 'pending')
-            ->get();
+            ->paginate($perPage);
 
-        // return $this->success($requests, 'Friend requests fetched successfully.');
         return $this->success(
-            FriendRequestResource::collection($requests),
-            'Friend requests fetched successfully.'
+            new FriendRequestCollection($requests),
+            'Incoming friend requests fetched successfully.'
+        );
+    }
+
+    /**
+     * Get sent friend request list
+     */
+    public function getSentRequests(Request $request)
+    {
+        $user = auth('api')->user();
+
+        $perPage = $request->get('per_page', 10);
+
+        $sentRequests = FriendRequest::with('receiver:id,first_name,last_name,username,avatar')
+            ->where('sender_id', $user->id)
+            ->where('status', 'pending')
+            ->paginate($perPage);
+
+        return $this->success(
+            new FriendRequestCollection($sentRequests),
+            'Sent friend requests fetched successfully.'
         );
     }
 }

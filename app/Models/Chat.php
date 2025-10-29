@@ -37,7 +37,7 @@ class Chat extends Model
     protected $appends = [
         'humanize_date',
         'short_text',
-        'type'
+        'type',
     ];
 
 
@@ -83,4 +83,9 @@ class Chat extends Model
     {
         return $this->belongsTo(Room::class);
     }
+
+    // public function getIsMyTestAttribute()
+    // {
+    //     return $this->sender_id === auth('api')->id();
+    // }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\User\UserBlockController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Chat\ChatController;
 use App\Http\Controllers\Api\User\UserController;
@@ -9,10 +10,9 @@ use App\Http\Controllers\Api\Auth\SocialLoginController;
 use App\Http\Controllers\Api\Auth\UserProfileController;
 use App\Http\Controllers\Api\Friend\FindFriendController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
-use App\Http\Controllers\Api\Friend\FriendBlockController;
+use App\Http\Controllers\Api\Friend\ReportUserController;
 use App\Http\Controllers\Api\Auth\AuthenticationController;
 use App\Http\Controllers\Api\Friend\FriendRequestController;
-use App\Http\Controllers\Api\Notification\NotificationController;
 
 //health-check
 Route::get("/check", function () {
@@ -61,6 +61,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::post('/accept-request', [FriendRequestController::class, 'acceptRequest']); // working: accept friend request
         Route::post('/decline-request', [FriendRequestController::class, 'declineRequest']); // working: decline friend request
         Route::get('/requests', [FriendRequestController::class, 'getRequests']); // working: all incoming requests
+        Route::get('/requests/sent/list', [FriendRequestController::class, 'getSentRequests']); // working all send friend request
 
 
         Route::get('/list', [FriendsController::class, 'friendList']); // all firend list all auth user
@@ -71,11 +72,16 @@ Route::group(['middleware' => 'auth:api'], function () {
     // Get user details
     Route::get('/user-profile/{userId}', [UserController::class, 'userDetais']);
 
+    // User Report system
+    Route::prefix('/report')->group(function () {
+        Route::post('/user/{reported_user_id}', [ReportUserController::class, 'reportUser']); // working
+        Route::get('/list', [ReportUserController::class, 'reportedUsers']); // working
+    });
+
     // User Block system
     Route::prefix('/block')->group(function () {
-        Route::post('/user', [FriendBlockController::class, 'blockUser']);
-        Route::post('/user/unblock', [FriendBlockController::class, 'unblockUser']);
-        Route::get('/list', [FriendBlockController::class, 'blockedUsers']);
+        Route::post('/user/{block_user_id}', [UserBlockController::class, 'toggleBlock']); // working
+        Route::get('/list', [UserBlockController::class, 'blockedUsers']); // working
     });
 
     // //Notification

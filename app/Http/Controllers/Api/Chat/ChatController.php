@@ -181,6 +181,12 @@ class ChatController extends Controller
             ->orderBy('created_at')
             ->paginate($perPage);
 
+        // check is my text
+        $chat->getCollection()->transform(function ($message) use ($sender_id) {
+            $message->is_my_text = $message->sender_id === $sender_id;
+            return $message;
+        });
+
         // Get or create chat room
         $room = Room::where(function ($query) use ($receiver_id, $sender_id) {
             $query->where('user_one_id', $receiver_id)->where('user_two_id', $sender_id);
