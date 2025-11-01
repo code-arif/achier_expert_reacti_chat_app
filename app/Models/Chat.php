@@ -79,9 +79,14 @@ class Chat extends Model
         return $this->belongsTo(User::class, 'receiver_id');
     }
 
-    public function room(): BelongsTo
+    // public function room(): BelongsTo
+    // {
+    //     return $this->belongsTo(Room::class);
+    // }
+
+    public function room()
     {
-        return $this->belongsTo(Room::class);
+        return $this->belongsTo(Room::class, 'room_id');
     }
 
     // public function getIsMyTestAttribute()

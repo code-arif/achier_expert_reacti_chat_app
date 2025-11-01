@@ -90,7 +90,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     // Route::post('/read-all-notifications', [NotificationController::class, 'readAllNotifications']); //mark as read all notification
 
     Route::middleware(['auth:api'])->controller(ChatController::class)->prefix('auth/chat')->group(function () {
-        Route::get('/list', 'list'); // working
+        Route::get('/list', 'listCombined'); // working
         Route::post('/send/{receiver_id}', 'send'); // working
         Route::get('/conversation/{receiver_id}', 'conversation'); // working
         Route::get('room/{receiver_id}', 'room');

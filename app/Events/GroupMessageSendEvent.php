@@ -91,5 +91,5 @@ class GroupMessageSendEvent implements ShouldBroadcastNow
     /**
      * The event's broadcast name.
      */
-   
+
 }
