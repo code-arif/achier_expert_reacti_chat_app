@@ -21,70 +21,6 @@ class ChatController extends Controller
 {
     use ApiResponse;
 
-    /**
-     * List all users with their last chat messages
-     */
-    // public function list(Request $request): JsonResponse
-    // {
-    //     $authUser = Auth::guard('api')->user();
-    //     $keyword = $request->get('keyword');
-
-    //     // Users query
-    //     $usersQuery = User::select('id', 'first_name', 'last_name', 'email', 'avatar', 'last_activity_at')
-    //         ->where('id', '!=', $authUser->id)
-    //         ->where(function ($query) use ($authUser) {
-    //             $query->whereHas('senders', function ($q) use ($authUser) {
-    //                 $q->where('receiver_id', $authUser->id);
-    //             })
-    //                 ->orWhereHas('receivers', function ($q) use ($authUser) {
-    //                     $q->where('sender_id', $authUser->id);
-    //                 });
-    //         });
-
-    //     // Apply search keyword if exists
-    //     if ($keyword) {
-    //         $usersQuery->where(function ($q) use ($keyword) {
-    //             $q->where('first_name', 'LIKE', "%{$keyword}%")
-    //                 ->orWhere('last_name', 'LIKE', "%{$keyword}%")
-    //                 ->orWhere('email', 'LIKE', "%{$keyword}%");
-    //         });
-    //     }
-
-    //     $users = $usersQuery->get();
-
-    //     // Map last chat + active flag
-    //     $userWithMessages = $users->map(function ($user) use ($authUser) {
-    //         $lastChat = Chat::where(function ($query) use ($user, $authUser) {
-    //             $query->where('sender_id', $authUser->id)
-    //                 ->where('receiver_id', $user->id);
-    //         })
-    //             ->orWhere(function ($query) use ($user, $authUser) {
-    //                 $query->where('sender_id', $user->id)
-    //                     ->where('receiver_id', $authUser->id);
-    //             })
-    //             ->latest()
-    //             ->first();
-
-    //         $user->last_chat = $lastChat;
-
-    //         // Active check (within 5 minutes)
-    //         $user->is_active = $user->last_activity_at && $user->last_activity_at->gt(now()->subMinutes(5));
-
-    //         return $user;
-    //     });
-
-    //     // Sort by last chat
-    //     $sortedUsers = $userWithMessages->sortByDesc(function ($user) {
-    //         return optional($user->last_chat)->created_at;
-    //     })->values();
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'Chat retrieved Successfully',
-    //         'data' => ['users' => $sortedUsers],
-    //     ], 200);
-    // }
-
 
     /*
     * Send a message to a user
@@ -126,8 +62,6 @@ class ChatController extends Controller
         $file = null;
         if ($request->hasFile('file')) {
             $file = Helper::fileUpload($request->file('file'),  'chat', time() . '_' . $request->file('file'));
-
-
         }
 
         $chat = Chat::create([
@@ -192,6 +126,36 @@ class ChatController extends Controller
         // check is my text
         $chat->getCollection()->transform(function ($message) use ($sender_id) {
             $message->is_my_text = $message->sender_id === $sender_id;
+
+            // Determine media type from file extension
+            if ($message->file) {
+                $extension = strtolower(pathinfo($message->file, PATHINFO_EXTENSION));
+
+                $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+                $videoExtensions = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm', 'm4v'];
+
+                if (in_array($extension, $imageExtensions)) {
+                    $message->media_type = 'image';
+                } elseif (in_array($extension, $videoExtensions)) {
+                    $message->media_type = 'video';
+                } else {
+                    $message->media_type = 'file'; // fallback
+                }
+            } else {
+                $message->media_type = 'text';
+            }
+
+            // Optional: humanize date
+            $message->humanize_date = \Carbon\Carbon::parse($message->created_at)->diffForHumans();
+
+            // Optional: short text preview
+            $message->short_text = $message->text ? (strlen($message->text) > 50
+                ? substr($message->text, 0, 50) . '...'
+                : $message->text) : null;
+
+            // Optional: message type (sent/received) - already have is_my_text
+            $message->type = $message->is_my_text ? 'sent' : 'received';
+
             return $message;
         });
 
