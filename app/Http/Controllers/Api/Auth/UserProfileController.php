@@ -60,7 +60,6 @@ class UserProfileController extends Controller
                 'last_name' => ['nullable', 'string', 'max:50'],
                 'avatar' => ['nullable', 'image'],
                 'bio' => ['nullable', 'string', 'max:100'],
-                'username' => ['nullable', 'string', 'max:50', 'unique:users,username,' . $user->id],
                 'phone' => ['nullable', 'string', 'max:20', 'unique:users,phone,' . $user->id],
             ]);
 
@@ -89,6 +88,34 @@ class UserProfileController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             return $this->error([], 'Failed to update profile.', 500);
+        }
+    }
+
+    /**
+     * Update username
+     */
+    public function updateUsername(Request $request){
+        try {
+            $user = auth('api')->user();
+
+            $validator = Validator::make($request->all(), [
+                'username' => ['required', 'string', 'max:50', 'unique:users,username,' . $user->id],
+            ]);
+
+            if ($validator->fails()) {
+                return $this->error([], $validator->errors()->first(), 422);
+            }
+
+            $user->update($validator->validated());
+            $username = $user->username;
+
+            return $this->success($username, 'Username updated successfully.', 200);
+        } catch (Exception $e) {
+            Log::error('Username Update Error: ' . $e->getMessage(), [
+                'user_id' => auth('api')->id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->error([], 'Failed to update username.', 500);
         }
     }
 
