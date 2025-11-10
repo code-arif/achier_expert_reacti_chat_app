@@ -100,6 +100,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('/seen/single/{chat_id}', 'seenSingle'); // working
         Route::delete('/delete/{receiver_id}', 'deleteChat'); // working
         Route::delete('/delete/chat/messages', 'deleteMessages'); // working
+        Route::post('chat/mark-viewed/{message_id}', 'markAsViewed');
     });
 
 
@@ -111,6 +112,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::post('/{group_id}/send', 'sendMessage'); // working
         Route::post('/{group_id}/message/{message_id}', 'editMessage'); // working
         Route::get('/{group_id}/messages', 'getMessages'); //working
+        Route::get('/{group_id}/messages/media', 'messageMedia');
         Route::post('/{group_id}/read', 'markAsRead'); // working
         Route::post('/{group_id}/add-members', 'addMembers'); // working
         Route::delete('/{group_id}/remove-member/{user_id}', 'removeMember'); // working

@@ -15,15 +15,17 @@ return new class extends Migration
             $table->id();
             $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('room_id')->nullable()->constrained('rooms')->onDelete('cascade');
+            $table->foreignId('room_id')->constrained('rooms')->onDelete('cascade');
             $table->text('text')->nullable();
             $table->string('file')->nullable();
-            $table->enum('status', ['sent', 'read', 'unread'])->default('unread');
+            $table->enum('status', ['sent', 'delivered', 'read'])->default('sent');
+            $table->boolean('is_blurred')->default(false); // New field
+            $table->boolean('is_viewed')->default(false); // New field
+            $table->enum('message_type', ['normal', 'reaction'])->default('normal'); // New field
             $table->timestamps();
-            $table->softDeletes();
         });
     }
-    
+
     /**
      * Reverse the migrations.
      */
