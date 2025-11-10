@@ -199,29 +199,43 @@ class AuthenticationController extends Controller
             $email = trim(strtolower($validated['email']));
             $password = $validated['password'];
 
-            // Find active user (not soft-deleted)
+            // Step 1: Find user by email, active, not deleted
             $user = User::where('email', $email)
                 ->where('status', 'active')
                 ->whereNull('deleted_at')
                 ->first();
 
+            $errors = [];
+
+            // Step 2: Check if user exists
             if (!$user) {
-                return $this->error([], 'Invalid email or password.', 401);
+                $errors[] = 'Invalid email.';
+            } else {
+                // Step 3: Check OTP verification
+                if (!$user->otp_verified_at) {
+                    return $this->error([], 'Please verify your email before logging in.', 401);
+                }
+
+                // Step 4: Check password
+                if (!Hash::check($password, $user->password)) {
+                    $errors[] = 'Invalid password.';
+                }
             }
 
-            // Check OTP verification
-            if (!$user->otp_verified_at) {
-                return $this->error([], 'Please verify your email before logging in.', 401);
+            // Step 5: If any error, return appropriate message
+            if (!empty($errors)) {
+                $message = count($errors) === 1
+                    ? $errors[0]
+                    : 'Invalid email or password.';
+
+                return $this->error([], $message, 401);
             }
 
-            // Attempt login
-            if (!auth('api')->attempt(['email' => $email, 'password' => $password])) {
-                return $this->error([], 'Invalid email or password.', 401);
-            }
+            // Step 6: Login successful
+            auth('api')->login($user); // or use attempt if needed, but since we checked, direct login
 
             // Update last activity
             $user->update(['last_activity_at' => now()]);
-
             $user->makeHidden(['password', 'otp', 'reset_password_token']);
 
             $data = [
@@ -242,7 +256,6 @@ class AuthenticationController extends Controller
             return $this->error([], 'Something went wrong. Please try again later.', 500);
         }
     }
-
 
 
     /*

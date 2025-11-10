@@ -19,6 +19,7 @@ use App\Http\Resources\MessageResource;
 use App\Http\Resources\ChatGroupResource;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\GroupDetailsResource;
+use App\Http\Resources\GroupMessageMediaResource;
 
 class GroupChatController extends Controller
 {
@@ -325,6 +326,47 @@ class GroupChatController extends Controller
                     'current_page' => $messages->currentPage(),
                     'last_page' => $messages->lastPage(),
                     'per_page' => $messages->perPage(),
+                ],
+            ],
+            'code' => 200
+        ]);
+    }
+
+    /**
+     * Get all message media
+     */
+    public function messageMedia($group_id)
+    {
+        $authUser = Auth::guard('api')->user();
+        $group = Group::find($group_id);
+
+        if (!$group) {
+            return response()->json(['success' => false, 'message' => 'Group not found', 'code' => 404], 404);
+        }
+
+        if (!$group->isMember($authUser->id)) {
+            return response()->json(['success' => false, 'message' => 'You are not a member of this group', 'code' => 403], 403);
+        }
+
+        $perPage = 50;
+        $messages = GroupMessage::where('group_id', $group_id)
+            ->whereNotNull('file')
+            ->with([
+                'sender:id,first_name,last_name,avatar,last_activity_at',
+            ])
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Media files retrieved successfully',
+            'data' => [
+                'media' => GroupMessageMediaResource::collection($messages->items()),
+                'pagination' => [
+                    'total'       => $messages->total(),
+                    'current_page' => $messages->currentPage(),
+                    'last_page'   => $messages->lastPage(),
+                    'per_page'    => $messages->perPage(),
                 ],
             ],
             'code' => 200

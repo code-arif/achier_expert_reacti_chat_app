@@ -28,17 +28,25 @@ class GroupDetailsResource extends JsonResource
             ],
 
             'members' => $this->members->map(function ($member) {
+                $user = $member->user;
+
+                // Determine role: if user is group creator → owner
+                $role = $member->role ?? 'member'; // default from pivot
+                if ($user->id === $this->created_by) {
+                    $role = 'owner'; // Force owner for creator
+                }
+
                 return [
                     'id' => $member->id,
-                    'role' => $member->role,
+                    'role' => $role, // owner / admin / member
                     'joined_at' => $member->created_at?->diffForHumans(),
                     'user' => [
-                        'id' => $member->user?->id,
-                        'first_name' => $member->user?->first_name,
-                        'last_name' => $member->user?->last_name,
-                        'email' => $member->user?->email,
-                        'avatar' => $member->user?->avatar ? asset($member->user->avatar) : asset('default/default_image.jpg'),
-                        'last_activity_at' => $member->user?->last_activity_at?->diffForHumans(),
+                        'id' => $user?->id,
+                        'first_name' => $user?->first_name,
+                        'last_name' => $user?->last_name,
+                        'email' => $user?->email,
+                        'avatar' => $user?->avatar ? asset($user->avatar) : asset('default/default_image.jpg'),
+                        'last_activity_at' => $user?->last_activity_at?->diffForHumans(),
                     ]
                 ];
             }),
