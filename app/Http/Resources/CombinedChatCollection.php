@@ -9,6 +9,7 @@ class CombinedChatCollection extends ResourceCollection
 {
     public function toArray($request)
     {
+        // dd($this->total());
         return [
             'chats' => CombinedChatResource::collection($this->collection),
             'pagination' => [

@@ -430,22 +430,22 @@ class ChatController extends Controller
 
         $users = $usersQuery->get()->map(function ($user) use ($authUser) {
             $lastChat = Chat::where(function ($query) use ($user, $authUser) {
-                $query->where('sender_id', $authUser->id)->where('receiver_id', $user->id);
+                $query->where('sender_id', $authUser->id)
+                    ->where('receiver_id', $user->id);
             })
                 ->orWhere(function ($query) use ($user, $authUser) {
-                    $query->where('sender_id', $user->id)->where('receiver_id', $authUser->id);
+                    $query->where('sender_id', $user->id)
+                        ->where('receiver_id', $authUser->id);
                 })
                 ->latest()
                 ->first();
 
-            // determine or create room_id
             $room = Room::firstOrCreate([
                 'user_one_id' => min($authUser->id, $user->id),
                 'user_two_id' => max($authUser->id, $user->id),
             ]);
 
-
-            return (object) [
+            return [
                 'type' => 'single',
                 'room_id' => $room->id,
                 'id' => $user->id,
@@ -468,9 +468,9 @@ class ChatController extends Controller
         $groups = $groupsQuery->get()->map(function ($group) {
             $lastMessage = $group->messages()->latest()->first();
 
-            return (object) [
+            return [
                 'type' => 'group',
-                'room_id' => $group->id, // or $group->chat_room_id if exists
+                'room_id' => $group->id,
                 'id' => $group->id,
                 'name' => $group->name,
                 'avatar' => $group->avatar ? asset($group->avatar) : asset('default/default_group.jpg'),
@@ -481,15 +481,15 @@ class ChatController extends Controller
             ];
         });
 
-
         // --- Merge + sort ---
         $combined = $users->merge($groups)
-            ->sortByDesc(fn($chat) => $chat->last_message_time)
+            ->sortByDesc(fn($chat) => $chat['last_message_time'])
             ->values();
 
-        // --- Manual pagination (since we merged collections) ---
+        // --- Manual pagination ---
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $pagedData = $combined->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
         $paginator = new LengthAwarePaginator(
             $pagedData,
             $combined->count(),
