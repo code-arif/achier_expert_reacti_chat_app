@@ -10,7 +10,7 @@ class CombinedChatResource extends JsonResource
 {
     public function toArray($request)
     {
-        // ✅ Array হোক বা Object হোক - উভয়ই handle করবে
+        // Handle array and object
         $data = is_array($this->resource) ? (object) $this->resource : $this->resource;
 
         return [
