@@ -22,10 +22,6 @@ class ChatController extends Controller
 {
     use ApiResponse;
 
-<<<<<<< HEAD
-
-=======
->>>>>>> ariful
     /*
     * Send a message to a user
      */
@@ -102,12 +98,8 @@ class ChatController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'text' => 'nullable|string|max:1000',
-<<<<<<< HEAD
-            'file'  => 'nullable|max:30720'
-=======
             'file' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,mp3,wav,mp4,mov,avi,txt,pdf,doc,docx,xls,xlsx,zip,rar|max:51200',
             'message_type' => 'nullable|in:normal,reaction', // New field
->>>>>>> ariful
         ]);
 
         if ($validator->fails()) {
@@ -142,9 +134,6 @@ class ChatController extends Controller
 
         $file = null;
         if ($request->hasFile('file')) {
-<<<<<<< HEAD
-            $file = Helper::fileUpload($request->file('file'),  'chat', time() . '_' . $request->file('file'));
-=======
             $file = Helper::fileUpload($request->file('file'), 'chat', time() . '_' . $request->file('file'));
         }
 
@@ -155,7 +144,6 @@ class ChatController extends Controller
         // If it's a normal message with media, it should be blurred
         if ($messageType === 'normal' && $file) {
             $isBlurred = true;
->>>>>>> ariful
         }
 
         $chat = Chat::create([
@@ -331,44 +319,12 @@ class ChatController extends Controller
         $chat->getCollection()->transform(function ($message) use ($sender_id) {
             $message->is_my_text = $message->sender_id === $sender_id;
 
-<<<<<<< HEAD
-            // Determine media type from file extension
-            if ($message->file) {
-                $extension = strtolower(pathinfo($message->file, PATHINFO_EXTENSION));
-
-                $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
-                $videoExtensions = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm', 'm4v'];
-
-                if (in_array($extension, $imageExtensions)) {
-                    $message->media_type = 'image';
-                } elseif (in_array($extension, $videoExtensions)) {
-                    $message->media_type = 'video';
-                } else {
-                    $message->media_type = 'file'; // fallback
-                }
-            } else {
-                $message->media_type = 'text';
-            }
-
-            // Optional: humanize date
-            $message->humanize_date = \Carbon\Carbon::parse($message->created_at)->diffForHumans();
-
-            // Optional: short text preview
-            $message->short_text = $message->text ? (strlen($message->text) > 50
-                ? substr($message->text, 0, 50) . '...'
-                : $message->text) : null;
-
-            // Optional: message type (sent/received) - already have is_my_text
-            $message->type = $message->is_my_text ? 'sent' : 'received';
-
-=======
             // Show blur status only to receiver
             $message->should_show_blur = false;
             if ($message->receiver_id === $sender_id && $message->is_blurred && !$message->is_viewed) {
                 $message->should_show_blur = true;
             }
 
->>>>>>> ariful
             return $message;
         });
 
