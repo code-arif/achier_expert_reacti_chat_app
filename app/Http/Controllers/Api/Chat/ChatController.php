@@ -406,6 +406,105 @@ class ChatController extends Controller
      * combined message list
      */
 
+    // public function listCombined(Request $request): JsonResponse
+    // {
+    //     $authUser = Auth::guard('api')->user();
+    //     $keyword = $request->get('keyword');
+    //     $perPage = $request->get('per_page', 10);
+
+    //     // --- Fetch one-to-one chat users ---
+    //     $usersQuery = User::select('id', 'first_name', 'last_name', 'email', 'avatar', 'last_activity_at')
+    //         ->where('id', '!=', $authUser->id)
+    //         ->where(function ($query) use ($authUser) {
+    //             $query->whereHas('senders', fn($q) => $q->where('receiver_id', $authUser->id))
+    //                 ->orWhereHas('receivers', fn($q) => $q->where('sender_id', $authUser->id));
+    //         });
+
+    //     if ($keyword) {
+    //         $usersQuery->where(function ($q) use ($keyword) {
+    //             $q->where('first_name', 'LIKE', "%{$keyword}%")
+    //                 ->orWhere('last_name', 'LIKE', "%{$keyword}%")
+    //                 ->orWhere('email', 'LIKE', "%{$keyword}%");
+    //         });
+    //     }
+
+    //     $users = $usersQuery->get()->map(function ($user) use ($authUser) {
+    //         $lastChat = Chat::where(function ($query) use ($user, $authUser) {
+    //             $query->where('sender_id', $authUser->id)
+    //                 ->where('receiver_id', $user->id);
+    //         })
+    //             ->orWhere(function ($query) use ($user, $authUser) {
+    //                 $query->where('sender_id', $user->id)
+    //                     ->where('receiver_id', $authUser->id);
+    //             })
+    //             ->latest()
+    //             ->first();
+
+    //         $room = Room::firstOrCreate([
+    //             'user_one_id' => min($authUser->id, $user->id),
+    //             'user_two_id' => max($authUser->id, $user->id),
+    //         ]);
+
+    //         return [
+    //             'type' => 'single',
+    //             'room_id' => $room->id,
+    //             'id' => $user->id,
+    //             'name' => trim("{$user->first_name} {$user->last_name}"),
+    //             'avatar' => $user->avatar ? asset($user->avatar) : asset('default/default_image.jpg'),
+    //             'last_message' => $lastChat?->text,
+    //             'last_message_time' => $lastChat?->created_at,
+    //             'is_active' => $user->last_activity_at && $user->last_activity_at->gt(now()->subMinutes(5)),
+    //             'member_count' => null,
+    //         ];
+    //     });
+
+    //     // --- Fetch groups ---
+    //     $groupsQuery = Group::whereHas('members', fn($q) => $q->where('user_id', $authUser->id));
+
+    //     if ($keyword) {
+    //         $groupsQuery->where('name', 'LIKE', "%{$keyword}%");
+    //     }
+
+    //     $groups = $groupsQuery->get()->map(function ($group) {
+    //         $lastMessage = $group->messages()->latest()->first();
+
+    //         return [
+    //             'type' => 'group',
+    //             'room_id' => $group->id,
+    //             'id' => $group->id,
+    //             'name' => $group->name,
+    //             'avatar' => $group->avatar ? asset($group->avatar) : asset('default/default_group.jpg'),
+    //             'last_message' => $lastMessage?->text,
+    //             'last_message_time' => $lastMessage?->created_at,
+    //             'is_active' => false,
+    //             'member_count' => $group->members()->count(),
+    //         ];
+    //     });
+
+    //     // --- Merge + sort ---
+    //     $combined = $users->merge($groups)
+    //         ->sortByDesc(fn($chat) => $chat['last_message_time'])
+    //         ->values();
+
+    //     // --- Manual pagination ---
+    //     $currentPage = LengthAwarePaginator::resolveCurrentPage();
+    //     $pagedData = $combined->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
+    //     $paginator = new LengthAwarePaginator(
+    //         $pagedData,
+    //         $combined->count(),
+    //         $perPage,
+    //         $currentPage,
+    //         ['path' => $request->url(), 'query' => $request->query()]
+    //     );
+
+    //     return $this->success(
+    //         new CombinedChatCollection($paginator),
+    //         'Combined chat list retrieved successfully.'
+    //     );
+    // }
+
+
     public function listCombined(Request $request): JsonResponse
     {
         $authUser = Auth::guard('api')->user();
@@ -428,7 +527,8 @@ class ChatController extends Controller
             });
         }
 
-        $users = $usersQuery->get()->map(function ($user) use ($authUser) {
+        // ✅ সমাধান: (object) cast করুন
+        $users = collect($usersQuery->get()->map(function ($user) use ($authUser) {
             $lastChat = Chat::where(function ($query) use ($user, $authUser) {
                 $query->where('sender_id', $authUser->id)
                     ->where('receiver_id', $user->id);
@@ -445,7 +545,7 @@ class ChatController extends Controller
                 'user_two_id' => max($authUser->id, $user->id),
             ]);
 
-            return [
+            return (object) [
                 'type' => 'single',
                 'room_id' => $room->id,
                 'id' => $user->id,
@@ -456,7 +556,7 @@ class ChatController extends Controller
                 'is_active' => $user->last_activity_at && $user->last_activity_at->gt(now()->subMinutes(5)),
                 'member_count' => null,
             ];
-        });
+        }));
 
         // --- Fetch groups ---
         $groupsQuery = Group::whereHas('members', fn($q) => $q->where('user_id', $authUser->id));
@@ -465,10 +565,11 @@ class ChatController extends Controller
             $groupsQuery->where('name', 'LIKE', "%{$keyword}%");
         }
 
-        $groups = $groupsQuery->get()->map(function ($group) {
+        // ✅ সমাধান: (object) cast করুন
+        $groups = collect($groupsQuery->get()->map(function ($group) {
             $lastMessage = $group->messages()->latest()->first();
 
-            return [
+            return (object) [
                 'type' => 'group',
                 'room_id' => $group->id,
                 'id' => $group->id,
@@ -479,11 +580,11 @@ class ChatController extends Controller
                 'is_active' => false,
                 'member_count' => $group->members()->count(),
             ];
-        });
+        }));
 
         // --- Merge + sort ---
         $combined = $users->merge($groups)
-            ->sortByDesc(fn($chat) => $chat['last_message_time'])
+            ->sortByDesc(fn($chat) => $chat->last_message_time)
             ->values();
 
         // --- Manual pagination ---

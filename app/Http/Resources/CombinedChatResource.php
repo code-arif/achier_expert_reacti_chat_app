@@ -8,20 +8,23 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class CombinedChatResource extends JsonResource
 {
-     public function toArray($request)
+    public function toArray($request)
     {
+        // ✅ Array হোক বা Object হোক - উভয়ই handle করবে
+        $data = is_array($this->resource) ? (object) $this->resource : $this->resource;
+
         return [
-            'type' => $this->type,
-            'id' => $this->id,
-            'room_id' => $this->room_id ?? null,
-            'name' => $this->name,
-            'avatar' => $this->avatar,
-            'last_message' => $this->last_message,
-            'last_message_time' => $this->last_message_time
-                ? Carbon::parse($this->last_message_time)->diffForHumans(short: true)
+            'type' => $data->type,
+            'id' => $data->id,
+            'room_id' => $data->room_id ?? null,
+            'name' => $data->name,
+            'avatar' => $data->avatar,
+            'last_message' => $data->last_message,
+            'last_message_time' => $data->last_message_time
+                ? Carbon::parse($data->last_message_time)->diffForHumans(short: true)
                 : null,
-            'is_active' => $this->is_active ?? false,
-            'member_count' => $this->member_count ?? null,
+            'is_active' => $data->is_active ?? false,
+            'member_count' => $data->member_count ?? null,
         ];
     }
 
