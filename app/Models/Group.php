@@ -60,4 +60,10 @@ class Group extends Model
     {
         return $this->members()->where('user_id', $userId)->exists();
     }
+
+    // check owner
+    public function isOwner($userId)
+    {
+        return $this->created_by == $userId;
+    }
 }

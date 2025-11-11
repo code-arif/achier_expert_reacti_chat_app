@@ -121,5 +121,6 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::delete('/{group_id}/delete', 'deleteGroup'); // working
         Route::delete('/{group_id}/delete-messages', 'deleteMessages'); //working
         Route::post('/{group_id}/update', 'updateGroup'); // absolutely working
+        Route::post('/{group_id}/update/avatar', 'updateAvatar');
     });
 });

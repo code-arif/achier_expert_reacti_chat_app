@@ -22,78 +22,6 @@ class ChatController extends Controller
 {
     use ApiResponse;
 
-    /*
-    * Send a message to a user
-     */
-    // public function send(Request $request, $receiver_id): JsonResponse
-    // {
-
-    //     $validator = Validator::make($request->all(), [
-    //         'text' => 'nullable|string|max:1000',
-    //         'file'  => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,mp3,wav,mp4,mov,avi,txt,pdf,doc,docx,xls,xlsx,zip,rar|max:51200'
-    //     ]);
-
-    //     if ($validator->fails()) {
-    //         return response()->json(['message' => $validator->errors()->first()], 422);
-    //     }
-
-    //     $sender_id = Auth::guard('api')->id();
-
-    //     $receiver_exist = User::where('id', $receiver_id)->first();
-
-    //     if (!$receiver_exist || $receiver_id == $sender_id) {
-    //         return response()->json(['success' => false, 'message' => 'User not found or cannot chat with your self', 'data' => [],  'code' => 200]);
-    //     }
-
-    //     //Find Existing Room (or Create New)
-    //     $room = Room::where(function ($query) use ($receiver_id, $sender_id) {
-    //         $query->where('user_one_id', $receiver_id)->where('user_two_id', $sender_id);
-    //     })->orWhere(function ($query) use ($receiver_id, $sender_id) {
-    //         $query->where('user_one_id', $sender_id)->where('user_two_id', $receiver_id);
-    //     })->first();
-
-    //     if (!$room) {
-    //         $room = Room::create([
-    //             'user_one_id' => $sender_id,
-    //             'user_two_id' => $receiver_id
-    //         ]);
-    //     }
-
-    //     $file = null;
-    //     if ($request->hasFile('file')) {
-    //         $file = Helper::fileUpload($request->file('file'),  'chat', time() . '_' . $request->file('file'));
-    //     }
-
-    //     $chat = Chat::create([
-    //         'sender_id'   => $sender_id,
-    //         'receiver_id' => $receiver_id,
-    //         'text'        => $request->text,
-    //         'file'        => $file,
-    //         'room_id'     => $room->id,
-    //         'status'      => 'sent'
-    //     ]);
-
-    //     $chat->load([
-    //         'sender:id,first_name,last_name,avatar,last_activity_at',
-    //         'receiver:id,first_name,last_name,avatar,last_activity_at',
-    //         'room:id,user_one_id,user_two_id'
-    //     ]);
-
-    //     // broadcast(new MessageSendEvent($chat));
-    //     broadcast(new MessageSendEvent($chat))->toOthers();
-
-    //     $data = [
-    //         'chat' => $chat
-    //     ];
-
-    //     return response()->json([
-    //         'success'  => true,
-    //         'message'  => 'Message Sent Successfully.',
-    //         'data'     => $data,
-    //         'code'     => 200
-    //     ]);
-    // }
-
     public function send(Request $request, $receiver_id): JsonResponse
     {
         $validator = Validator::make($request->all(), [
@@ -175,7 +103,7 @@ class ChatController extends Controller
     }
 
     /**
-     * view message
+     * view message media
      */
     public function markAsViewed(Request $request, $message_id): JsonResponse
     {
@@ -210,86 +138,6 @@ class ChatController extends Controller
     /**
      * Get conversation with a specific user
      */
-    // public function conversation($receiver_id): JsonResponse
-    // {
-    //     $sender_id = Auth::guard('api')->id();
-
-    //     // Mark messages as read
-    //     Chat::where('receiver_id', $sender_id)
-    //         ->where('sender_id', $receiver_id)
-    //         ->update(['status' => 'read']);
-
-    //     // Paginate chat messages
-    //     $perPage = 50; // fixed or you can make it dynamic via request
-    //     $chat = Chat::query()
-    //         ->where(function ($query) use ($receiver_id, $sender_id) {
-    //             $query->where('sender_id', $sender_id)->where('receiver_id', $receiver_id);
-    //         })
-    //         ->orWhere(function ($query) use ($receiver_id, $sender_id) {
-    //             $query->where('sender_id', $receiver_id)->where('receiver_id', $sender_id);
-    //         })
-    //         ->with([
-    //             'sender:id,first_name,last_name,avatar,last_activity_at',
-    //             'receiver:id,first_name,last_name,avatar,last_activity_at',
-    //             'room:id,user_one_id,user_two_id',
-    //         ])
-    //         ->orderBy('created_at')
-    //         ->paginate($perPage);
-
-    //     // check is my text
-    //     $chat->getCollection()->transform(function ($message) use ($sender_id) {
-    //         $message->is_my_text = $message->sender_id === $sender_id;
-    //         return $message;
-    //     });
-
-
-    //     // Get or create chat room
-    //     $room = Room::where(function ($query) use ($receiver_id, $sender_id) {
-    //         $query->where('user_one_id', $receiver_id)->where('user_two_id', $sender_id);
-    //     })->orWhere(function ($query) use ($receiver_id, $sender_id) {
-    //         $query->where('user_one_id', $sender_id)->where('user_two_id', $receiver_id);
-    //     })->first();
-
-    //     if (!$room) {
-    //         $room = Room::create([
-    //             'user_one_id' => $sender_id,
-    //             'user_two_id' => $receiver_id
-    //         ]);
-    //     }
-
-    //     // Check if sender has blocked the receiver
-    //     $is_blocked = DB::table('user_blocks')
-    //         ->where('user_id', $sender_id)
-    //         ->where('block_user_id', $receiver_id)
-    //         ->exists();
-
-    //     // Response data
-    //     $data = [
-    //         'receiver' => User::select('id', 'first_name', 'last_name', 'avatar', 'last_activity_at')
-    //             ->where('id', $receiver_id)
-    //             ->first(),
-    //         'sender' => User::select('id', 'first_name', 'last_name', 'avatar', 'last_activity_at')
-    //             ->where('id', $sender_id)
-    //             ->first(),
-    //         'room' => $room,
-    //         'chat' => $chat->items(),
-    //         'pagination' => [
-    //             'total'        => $chat->total(),
-    //             'current_page' => $chat->currentPage(),
-    //             'last_page'    => $chat->lastPage(),
-    //             'per_page'     => $chat->perPage(),
-    //         ],
-    //         'is_blocked' => $is_blocked, // এই লাইনটা যোগ করো
-    //     ];
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'Messages retrieved successfully',
-    //         'data'    => $data,
-    //         'code'    => 200
-    //     ]);
-    // }
-
     public function conversation($receiver_id): JsonResponse
     {
         $sender_id = Auth::guard('api')->id();

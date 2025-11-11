@@ -513,6 +513,60 @@ class GroupChatController extends Controller
     }
 
     /**
+     * Romove admin
+     */
+    public function removeAdmin($group_id, $user_id): JsonResponse
+    {
+        $authUser = Auth::guard('api')->user();
+        $group = Group::find($group_id);
+
+        // Check if group exists
+        if (!$group) {
+            return response()->json(['success' => false, 'message' => 'Group not found', 'code' => 404], 404);
+        }
+
+        // Only admins can demote others
+        if (!$group->isAdmin($authUser->id)) {
+            return response()->json(['success' => false, 'message' => 'Only admins can demote members', 'code' => 403], 403);
+        }
+
+        // Only owner can remove admin
+        if ($group->isOwner($user_id)) {
+            return response()->json(['success' => false, 'message' => 'Group owner cannot be demoted', 'code' => 403], 403);
+        }
+
+
+        // Fetch the target member
+        $member = GroupMember::where('group_id', $group_id)
+            ->where('user_id', $user_id)
+            ->first();
+
+        if (!$member) {
+            return response()->json(['success' => false, 'message' => 'User is not a member of this group', 'code' => 404], 404);
+        }
+
+        // Prevent demoting the group owner
+        if ($group->created_by == $user_id) {
+            return response()->json(['success' => false, 'message' => 'Group owner cannot be demoted', 'code' => 403], 403);
+        }
+
+        // Check if user is actually an admin before demotion
+        if ($member->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'User is not an admin', 'code' => 400], 400);
+        }
+
+        // Demote admin to member
+        $member->update(['role' => 'member']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Admin demoted to member successfully',
+            'code' => 200
+        ]);
+    }
+
+
+    /**
      * Leave group
      */
     public function leaveGroup($group_id): JsonResponse
@@ -608,7 +662,7 @@ class GroupChatController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'avatar' => 'nullable|image|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -647,6 +701,66 @@ class GroupChatController extends Controller
             'success' => true,
             'message' => 'Group updated successfully',
             'data' =>  new MessageResource($group),
+            'code' => 200
+        ]);
+    }
+
+    /**
+     * Update avatar (Only owner and admin)
+     */
+    public function updateAvatar(Request $request, $group_id): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'avatar' => 'required|image|max:5120', // Max 5MB
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'code' => 422
+            ], 422);
+        }
+
+        $authUser = Auth::guard('api')->user();
+        $group = Group::find($group_id);
+
+        if (!$group) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Group not found',
+                'code' => 404
+            ], 404);
+        }
+
+        // Only admins or group creator can update avatar
+        if (!$group->isAdmin($authUser->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only admins can update group avatar',
+                'code' => 403
+            ], 403);
+        }
+
+        // Upload new avatar
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $fileName = time() . '_group_avatar.' . $file->getClientOriginalExtension();
+            $newAvatar = Helper::fileUpload($file, 'groups', $fileName);
+
+            // Delete old avatar if exists
+            if (!empty($group->avatar)) {
+                Helper::fileDelete($group->avatar);
+            }
+
+            // Update database
+            $group->update(['avatar' => $newAvatar]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Group avatar updated successfully',
+            'data' => new MessageResource($group),
             'code' => 200
         ]);
     }
