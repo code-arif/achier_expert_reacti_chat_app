@@ -23,6 +23,7 @@ return new class extends Migration
             $table->boolean('is_viewed')->default(false); // New field
             $table->enum('message_type', ['normal', 'reaction'])->default('normal'); // New field
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
