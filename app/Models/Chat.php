@@ -16,7 +16,11 @@ class Chat extends Model
         'receiver_id',
         'text',
         'file',
-        'room_id'
+        'room_id',
+        'status',
+        'is_blurred',
+        'is_viewed',
+        'message_type'
     ];
 
     protected $hidden = [

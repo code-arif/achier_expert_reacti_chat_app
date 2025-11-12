@@ -22,6 +22,9 @@ class ChatController extends Controller
 {
     use ApiResponse;
 
+    /**
+     * Send message
+     */
     public function send(Request $request, $receiver_id): JsonResponse
     {
         $validator = Validator::make($request->all(), [
