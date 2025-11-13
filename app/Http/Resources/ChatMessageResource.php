@@ -27,7 +27,7 @@ class ChatMessageResource extends JsonResource
             'message_type' => $this->message_type,
             'is_my_text' => $this->is_my_text ?? false,
             'should_show_blur' => $this->should_show_blur ?? false,
-            'humanize_date' => $this->created_at->diffForHumans(),
+            'humanize_date' => $this->created_at?->diffForHumans(short: true),
             'short_text' => $this->text ? (strlen($this->text) > 20 ? substr($this->text, 0, 20) . '...' : $this->text) : null,
             'type' => $this->is_my_text ? 'sent' : 'received',
 
@@ -39,14 +39,14 @@ class ChatMessageResource extends JsonResource
                 'first_name' => $this->sender->first_name,
                 'last_name' => $this->sender->last_name,
                 'avatar' => $this->sender->avatar,
-                'last_activity_at' => $this->sender->last_activity_at,
+                'last_activity_at' => $this->sender->last_activity_at?->diffForHumans(short: true),
             ],
             'receiver' => [
                 'id' => $this->receiver->id,
                 'first_name' => $this->receiver->first_name,
                 'last_name' => $this->receiver->last_name,
                 'avatar' => $this->receiver->avatar,
-                'last_activity_at' => $this->receiver->last_activity_at,
+                'last_activity_at' => $this->receiver->last_activity_at?->diffForHumans(short: true),
             ],
             'room' => [
                 'id' => $this->room->id,
