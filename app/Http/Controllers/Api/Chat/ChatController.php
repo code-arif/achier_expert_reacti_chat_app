@@ -30,7 +30,7 @@ class ChatController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'text' => 'nullable|string|max:1000',
-            'file' => 'nullable',
+            'file' => 'nullable|file',
             'message_type' => 'nullable|in:normal,reaction', // New field
         ]);
 
@@ -612,7 +612,7 @@ class ChatController extends Controller
             });
         }
 
-        // ✅ সমাধান: (object) cast করুন
+        // সমাধান: (object) cast করুন
         $users = collect($usersQuery->get()->map(function ($user) use ($authUser) {
             $lastChat = Chat::where(function ($query) use ($user, $authUser) {
                 $query->where('sender_id', $authUser->id)
@@ -636,7 +636,9 @@ class ChatController extends Controller
                 'id' => $user->id,
                 'name' => trim("{$user->first_name} {$user->last_name}"),
                 'avatar' => $user->avatar ? asset($user->avatar) : asset('default/default_image.jpg'),
+                // 'last_message' => $lastChat?->text,
                 'last_message' => $lastChat?->text,
+                'last_message_file' => $lastChat?->file,
                 'last_message_time' => $lastChat?->created_at,
                 'is_active' => $user->last_activity_at && $user->last_activity_at->gt(now()->subMinutes(5)),
                 'member_count' => null,
@@ -650,7 +652,7 @@ class ChatController extends Controller
             $groupsQuery->where('name', 'LIKE', "%{$keyword}%");
         }
 
-        // ✅ সমাধান: (object) cast করুন
+        // সমাধান: (object) cast করুন
         $groups = collect($groupsQuery->get()->map(function ($group) {
             $lastMessage = $group->messages()->latest()->first();
 
@@ -660,7 +662,9 @@ class ChatController extends Controller
                 'id' => $group->id,
                 'name' => $group->name,
                 'avatar' => $group->avatar ? asset($group->avatar) : asset('default/default_group.jpg'),
+                // 'last_message' => $lastMessage?->text,
                 'last_message' => $lastMessage?->text,
+                'last_message_file' => $lastMessage?->file,
                 'last_message_time' => $lastMessage?->created_at,
                 'is_active' => false,
                 'member_count' => $group->members()->count(),

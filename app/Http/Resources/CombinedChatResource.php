@@ -19,7 +19,11 @@ class CombinedChatResource extends JsonResource
             'room_id' => $data->room_id ?? null,
             'name' => $data->name,
             'avatar' => $data->avatar,
-            'last_message' => $data->last_message,
+            'last_message' => ($data->last_message && $data->last_message !== '')
+                ? $data->last_message
+                : (($data->last_message_file ?? null)
+                    ? '📎 File attachment'
+                    : null),
             'last_message_time' => $data->last_message_time
                 ? Carbon::parse($data->last_message_time)->diffForHumans(short: true)
                 : null,
