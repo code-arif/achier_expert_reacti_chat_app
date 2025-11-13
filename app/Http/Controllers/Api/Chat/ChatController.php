@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Resources\ChatMessageResource;
 use App\Http\Resources\CombinedChatCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -141,6 +142,90 @@ class ChatController extends Controller
     /**
      * Get conversation with a specific user
      */
+    // public function conversation($receiver_id): JsonResponse
+    // {
+    //     $sender_id = Auth::guard('api')->id();
+
+    //     // Mark messages as read
+    //     Chat::where('receiver_id', $sender_id)
+    //         ->where('sender_id', $receiver_id)
+    //         ->update(['status' => 'read']);
+
+    //     $perPage = 50;
+    //     $chat = Chat::query()
+    //         ->where(function ($query) use ($receiver_id, $sender_id) {
+    //             $query->where('sender_id', $sender_id)->where('receiver_id', $receiver_id);
+    //         })
+    //         ->orWhere(function ($query) use ($receiver_id, $sender_id) {
+    //             $query->where('sender_id', $receiver_id)->where('receiver_id', $sender_id);
+    //         })
+    //         ->with([
+    //             'sender:id,first_name,last_name,avatar,last_activity_at',
+    //             'receiver:id,first_name,last_name,avatar,last_activity_at',
+    //             'room:id,user_one_id,user_two_id',
+    //         ])
+    //         ->orderBy('created_at')
+    //         ->paginate($perPage);
+
+    //     // Transform messages
+    //     $chat->getCollection()->transform(function ($message) use ($sender_id) {
+    //         $message->is_my_text = $message->sender_id === $sender_id;
+
+    //         // Show blur status only to receiver
+    //         $message->should_show_blur = false;
+    //         if ($message->receiver_id === $sender_id && $message->is_blurred && !$message->is_viewed) {
+    //             $message->should_show_blur = true;
+    //         }
+
+    //         return $message;
+    //     });
+
+    //     // Get or create room
+    //     $room = Room::where(function ($query) use ($receiver_id, $sender_id) {
+    //         $query->where('user_one_id', $receiver_id)->where('user_two_id', $sender_id);
+    //     })->orWhere(function ($query) use ($receiver_id, $sender_id) {
+    //         $query->where('user_one_id', $sender_id)->where('user_two_id', $receiver_id);
+    //     })->first();
+
+    //     if (!$room) {
+    //         $room = Room::create([
+    //             'user_one_id' => $sender_id,
+    //             'user_two_id' => $receiver_id
+    //         ]);
+    //     }
+
+    //     $is_blocked = DB::table('user_blocks')
+    //         ->where('user_id', $sender_id)
+    //         ->where('block_user_id', $receiver_id)
+    //         ->exists();
+
+    //     $data = [
+    //         'receiver' => User::select('id', 'first_name', 'last_name', 'avatar', 'last_activity_at')
+    //             ->where('id', $receiver_id)
+    //             ->first(),
+    //         'sender' => User::select('id', 'first_name', 'last_name', 'avatar', 'last_activity_at')
+    //             ->where('id', $sender_id)
+    //             ->first(),
+    //         'room' => $room,
+    //         'chat' => $chat->items(),
+    //         'pagination' => [
+    //             'total' => $chat->total(),
+    //             'current_page' => $chat->currentPage(),
+    //             'last_page' => $chat->lastPage(),
+    //             'per_page' => $chat->perPage(),
+    //         ],
+    //         'is_blocked' => $is_blocked,
+    //     ];
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Messages retrieved successfully',
+    //         'data' => $data,
+    //         'code' => 200
+    //     ]);
+    // }
+
+
     public function conversation($receiver_id): JsonResponse
     {
         $sender_id = Auth::guard('api')->id();
@@ -169,13 +254,10 @@ class ChatController extends Controller
         // Transform messages
         $chat->getCollection()->transform(function ($message) use ($sender_id) {
             $message->is_my_text = $message->sender_id === $sender_id;
-
-            // Show blur status only to receiver
             $message->should_show_blur = false;
             if ($message->receiver_id === $sender_id && $message->is_blurred && !$message->is_viewed) {
                 $message->should_show_blur = true;
             }
-
             return $message;
         });
 
@@ -206,7 +288,7 @@ class ChatController extends Controller
                 ->where('id', $sender_id)
                 ->first(),
             'room' => $room,
-            'chat' => $chat->items(),
+            'chat' => ChatMessageResource::collection($chat->items()),
             'pagination' => [
                 'total' => $chat->total(),
                 'current_page' => $chat->currentPage(),
