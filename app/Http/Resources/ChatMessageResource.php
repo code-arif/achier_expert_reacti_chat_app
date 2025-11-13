@@ -27,7 +27,7 @@ class ChatMessageResource extends JsonResource
             'message_type' => $this->message_type,
             'is_my_text' => $this->is_my_text ?? false,
             'should_show_blur' => $this->should_show_blur ?? false,
-            'humanize_date' => $this->created_at->diffForHumans(short:true),
+            'humanize_date' => $this->created_at->diffForHumans(),
             'short_text' => $this->text ? (strlen($this->text) > 20 ? substr($this->text, 0, 20) . '...' : $this->text) : null,
             'type' => $this->is_my_text ? 'sent' : 'received',
 
