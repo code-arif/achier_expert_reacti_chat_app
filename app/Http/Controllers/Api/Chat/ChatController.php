@@ -30,7 +30,7 @@ class ChatController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'text' => 'nullable|string|max:1000',
-            'file' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,mp3,wav,mp4,mov,avi,txt,pdf,doc,docx,xls,xlsx,zip,rar|max:51200',
+            'file' => 'nullable',
             'message_type' => 'nullable|in:normal,reaction', // New field
         ]);
 
