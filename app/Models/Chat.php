@@ -24,7 +24,7 @@ class Chat extends Model
     ];
 
     protected $hidden = [
-        'create_at',
+        'created_at',
         'updated_at',
         'deleted_at'
     ];
@@ -64,13 +64,26 @@ class Chat extends Model
         return $this->created_at->diffForHumans();
     }
 
+    // public function getTypeAttribute(): string
+    // {
+    //     if (request()->is('api/*')) {
+    //         return $this->sender_id = auth('api')->id() ? 'sent' : 'received';
+    //     }
+
+    //     return $this->sender_id == auth('web')->user()->id ? 'sent' : 'received';
+    // }
+
     public function getTypeAttribute(): string
     {
+        $currentUserId = null;
+
         if (request()->is('api/*')) {
-            return $this->sender_id = auth('api')->id() ? 'sent' : 'received';
+            $currentUserId = auth('api')->id();
+        } else {
+            $currentUserId = auth('web')->id();
         }
 
-        return $this->sender_id == auth('web')->user()->id ? 'sent' : 'received';
+        return $this->sender_id == $currentUserId ? 'sent' : 'received';
     }
 
     public function sender(): BelongsTo
@@ -92,9 +105,4 @@ class Chat extends Model
     {
         return $this->belongsTo(Room::class, 'room_id');
     }
-
-    // public function getIsMyTestAttribute()
-    // {
-    //     return $this->sender_id === auth('api')->id();
-    // }
 }
