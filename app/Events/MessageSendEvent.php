@@ -2,37 +2,51 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use App\Http\Resources\ChatResource;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 
 class MessageSendEvent implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $data;
+    public $chat;
 
-    public function __construct($data)
+    // public function __construct($data)
+    // {
+    //     $this->data = $data;
+
+    //     Log::info("Broadcasting message event", ['chat' => $this->data]);
+    // }
+
+    public function __construct($chat)
     {
-        $this->data = $data;
+        $this->chat = $chat;
 
-        Log::info("Broadcasting message event", ['chat' => $this->data]);
+        // Log e full formatted data dekhte chaile
+        Log::info("Broadcasting message event", [
+            'formatted_chat' => new ChatResource($chat)
+        ]);
     }
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("chat-room.{$this->data->room_id}"),
-            new PrivateChannel("chat-receiver.{$this->data->receiver_id}"),
-            new PrivateChannel("chat-sender.{$this->data->sender_id}")
+            new PrivateChannel("chat-room.{$this->chat->room_id}"),
+            new PrivateChannel("chat-receiver.{$this->chat->receiver_id}"),
+            new PrivateChannel("chat-sender.{$this->chat->sender_id}")
         ];
     }
 
-    /**
-     * Custom event name for frontend
-     */
-
+    // Ei method ta add korlei mobile e exactly resource er data pabe
+    public function broadcastWith(): array
+    {
+        return [
+            'chat' => new ChatResource($this->chat),
+        ];
+    }
 }
