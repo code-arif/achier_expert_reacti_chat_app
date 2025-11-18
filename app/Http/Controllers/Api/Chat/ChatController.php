@@ -235,7 +235,7 @@ class ChatController extends Controller
             ->where('sender_id', $receiver_id)
             ->update(['status' => 'read']);
 
-        $perPage = 50;
+        $perPage = 100;
         $chat = Chat::query()
             ->where(function ($query) use ($receiver_id, $sender_id) {
                 $query->where('sender_id', $sender_id)->where('receiver_id', $receiver_id);

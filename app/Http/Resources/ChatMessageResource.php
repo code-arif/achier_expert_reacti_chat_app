@@ -31,7 +31,7 @@ class ChatMessageResource extends JsonResource
             'short_text' => $this->text ? (strlen($this->text) > 20 ? substr($this->text, 0, 20) . '...' : $this->text) : null,
             'type' => $this->is_my_text ? 'sent' : 'received',
 
-            // 🎯 Media Type Detection
+            // Media Type Detection
             'media_type' => $this->getMediaType(),
 
             'sender' => [

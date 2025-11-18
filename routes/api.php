@@ -100,7 +100,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('/seen/single/{chat_id}', 'seenSingle'); // working
         Route::delete('/delete/{receiver_id}', 'deleteChat'); // working
         Route::delete('/delete/chat/messages', 'deleteMessages'); // working
-        Route::post('/mark-viewed/{message_id}', 'markAsViewed');
+        Route::post('/mark-viewed/{message_id}', 'markAsViewed'); // wroking
     });
 
 
