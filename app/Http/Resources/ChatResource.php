@@ -21,7 +21,7 @@ class ChatResource extends JsonResource
             'sender_id'       => $this->sender_id,
             'receiver_id'     => $this->receiver_id,
             'text'            => $this->text ?? '',
-            'file'            => $this->file ? asset('storage/' . $this->file) : null,
+            'file'            => $this->file ? asset('' . $this->file) : null,
             'room_id'         => $this->room_id,
             'status'          => $this->status,
             'is_blurred'      => (bool) $this->is_blurred,
@@ -40,7 +40,7 @@ class ChatResource extends JsonResource
                 'first_name'      => $this->sender->first_name,
                 'last_name'       => $this->sender->last_name,
                 'avatar'          => $this->sender->avatar
-                    ? asset('storage/' . $this->sender->avatar)
+                    ? asset('' . $this->sender->avatar)
                     : asset('default/default_image.jpg'),
                 'last_activity_at' => $this->sender->last_activity_at,
             ],
@@ -50,7 +50,7 @@ class ChatResource extends JsonResource
                 'first_name'      => $this->receiver->first_name,
                 'last_name'       => $this->receiver->last_name,
                 'avatar'          => $this->receiver->avatar
-                    ? asset('storage/' . $this->receiver->avatar)
+                    ? asset('' . $this->receiver->avatar)
                     : asset('default/default_image.jpg'),
                 'last_activity_at' => $this->receiver->last_activity_at,
             ],
