@@ -109,7 +109,7 @@ class ChatController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Message Sent Successfully.',
-            'data'    => ['chat' => new ChatResource($chat)],  // ← Shudhu ei line change
+            'data'    => ['chat' => new ChatResource($chat)], 
             'code'    => 200
         ]);
     }
