@@ -29,7 +29,7 @@ class MessageSendEvent implements ShouldBroadcastNow
 
         // Log e full formatted data dekhte chaile
         Log::info("Broadcasting message event", [
-            'formatted_chat' => new ChatResource($chat)
+            'chat' => new ChatResource($chat)
         ]);
     }
 
