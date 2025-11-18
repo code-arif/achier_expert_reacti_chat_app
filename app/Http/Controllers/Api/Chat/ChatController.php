@@ -13,6 +13,7 @@ use App\Events\MessageSendEvent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ChatResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\ChatMessageResource;
@@ -98,11 +99,18 @@ class ChatController extends Controller
 
         broadcast(new MessageSendEvent($chat))->toOthers();
 
+        // return response()->json([
+        //     'success' => true,
+        //     'message' => 'Message Sent Successfully.',
+        //     'data' => ['chat' => $chat],
+        //     'code' => 200
+        // ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Message Sent Successfully.',
-            'data' => ['chat' => $chat],
-            'code' => 200
+            'data'    => ['chat' => new ChatResource($chat)],  // ← Shudhu ei line change
+            'code'    => 200
         ]);
     }
 
