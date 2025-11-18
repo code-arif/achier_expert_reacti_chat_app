@@ -27,7 +27,6 @@ class MessageSendEvent implements ShouldBroadcastNow
     {
         $this->chat = $chat;
 
-        // Log e full formatted data dekhte chaile
         Log::info("Broadcasting message event", [
             'chat' => new ChatResource($chat)
         ]);
@@ -42,7 +41,7 @@ class MessageSendEvent implements ShouldBroadcastNow
         ];
     }
 
-    // Ei method ta add korlei mobile e exactly resource er data pabe
+    //
     public function broadcastWith(): array
     {
         return [

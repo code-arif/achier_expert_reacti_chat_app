@@ -31,7 +31,7 @@ class ChatController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'text' => 'nullable|string|max:1000',
-            'file' => 'nullable|file',
+            'file' => 'nullable',
             'message_type' => 'nullable|in:normal,reaction', // New field
         ]);
 
