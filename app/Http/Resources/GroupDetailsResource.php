@@ -37,7 +37,7 @@ class GroupDetailsResource extends JsonResource
                 }
 
                 return [
-                    'id' => $member->id,
+                    // 'id' => $member->id,
                     'role' => $role, // owner / admin / member
                     'joined_at' => $member->created_at?->diffForHumans(),
                     'user' => [

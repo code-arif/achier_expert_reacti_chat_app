@@ -14,7 +14,11 @@ class GroupMessage extends Model
         'group_id',
         'sender_id',
         'text',
-        'file'
+        'file',
+        'status',
+        'is_blurred',
+        'is_viewed',
+        'message_type'
     ];
 
     protected $casts = [
@@ -41,5 +45,11 @@ class GroupMessage extends Model
     public function isReadBy($userId)
     {
         return $this->reads()->where('user_id', $userId)->exists();
+    }
+
+    // message status
+    public function messageStatus()
+    {
+        return $this->hasMany(GroupMessageUserStatus::class, 'message_id');
     }
 }

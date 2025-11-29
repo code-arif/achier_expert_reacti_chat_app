@@ -98,7 +98,7 @@ class ChatController extends Controller
         ]);
 
         broadcast(new MessageSendEvent($chat))->toOthers();
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Message Sent Successfully.',

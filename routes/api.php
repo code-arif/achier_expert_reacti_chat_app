@@ -12,6 +12,9 @@ use App\Http\Controllers\Api\Friend\FindFriendController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\Friend\ReportUserController;
 use App\Http\Controllers\Api\Auth\AuthenticationController;
+use App\Http\Controllers\Api\Chat\Group\GroupCreateController;
+use App\Http\Controllers\Api\Chat\Group\GroupManageMemberController;
+use App\Http\Controllers\Api\Chat\Group\GroupMessageController;
 use App\Http\Controllers\Api\Friend\FriendRequestController;
 
 //health-check
@@ -105,22 +108,32 @@ Route::group(['middleware' => 'auth:api'], function () {
 
 
     // New group chat routes
-    Route::middleware(['auth:api'])->controller(GroupChatController::class)->prefix('auth/group')->group(function () {
-        Route::post('/create', 'createGroup'); // working
-        Route::get('/list', 'listGroups'); // working
-        Route::get('/{group_id}', 'groupDetails'); // working
-        Route::post('/{group_id}/send', 'sendMessage'); // working
-        Route::post('/{group_id}/message/{message_id}', 'editMessage'); // working
-        Route::get('/{group_id}/messages', 'getMessages'); //working
-        Route::get('/{group_id}/messages/media', 'messageMedia');
-        Route::post('/{group_id}/read', 'markAsRead'); // working
-        Route::post('/{group_id}/add-members', 'addMembers'); // working
-        Route::delete('/{group_id}/remove-member/{user_id}', 'removeMember'); // working
-        Route::post('/{group_id}/make-admin/{user_id}', 'makeAdmin'); // working
-        Route::post('/{group_id}/leave', 'leaveGroup'); // working
-        Route::delete('/{group_id}/delete', 'deleteGroup'); // working
-        Route::delete('/{group_id}/delete-messages', 'deleteMessages'); //working
-        Route::post('/{group_id}/update', 'updateGroup'); // absolutely working
-        Route::post('/{group_id}/update/avatar', 'updateAvatar');
+    Route::middleware(['auth:api'])->prefix('auth/group')->group(function () {
+
+        // gorup opertation routes
+        Route::post('/create', [GroupCreateController::class, 'createGroup']); // working
+        Route::get('/list', [GroupCreateController::class, 'listGroups']); // done
+        Route::get('/{group_id}', [GroupCreateController::class, 'groupDetails']); // done
+        Route::post('/{group_id}/update', [GroupCreateController::class, 'updateGroup']); // absolutely working
+        Route::post('/{group_id}/update/avatar', [GroupCreateController::class, 'updateAvatar']); // working
+
+        // message routes
+        Route::post('/{group_id}/send', [GroupMessageController::class, 'sendMessage']); // working
+        Route::post('/{group_id}/message/{message_id}', [GroupMessageController::class, 'editMessage']); // working
+        Route::get('/{group_id}/messages', [GroupMessageController::class, 'getMessages']); //working
+        Route::post('/mark-viewed/{message_id}', [GroupMessageController::class, 'markAsViewed']); // wroking
+        Route::get('/{group_id}/messages/media', [GroupMessageController::class, 'messageMedia']);
+        Route::post('/{group_id}/read', [GroupMessageController::class, 'markAsRead']); // working
+        Route::delete('/{group_id}/delete-messages', [GroupMessageController::class, 'deleteMessages']); //working
+
+        // group member routes
+        Route::post('/{group_id}/add-members', [GroupManageMemberController::class, 'addMembers']); // working
+        Route::delete('/{group_id}/remove-member/{user_id}', [GroupManageMemberController::class, 'removeMember']); // working
+        Route::post('/{group_id}/make-admin/{user_id}', [GroupManageMemberController::class, 'makeAdmin']); // working
+        Route::post('/{group_id}/remove-admin/{user_id}', [GroupManageMemberController::class, 'removeAdmin']); // working
+        Route::post('/{group_id}/leave', [GroupManageMemberController::class, 'leaveGroup']); // working
+        Route::delete('/{group_id}/delete', [GroupManageMemberController::class, 'deleteGroup']); // working
+        Route::get('/{group}/available-users', [GroupManageMemberController::class, 'availableUsers']);
+
     });
 });

@@ -2,13 +2,13 @@
 
 namespace App\Events;
 
-use App\Models\GroupMessage;
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Queue\SerializesModels;
+use App\Http\Resources\MessageResource;
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 
 class GroupMessageSendEvent implements ShouldBroadcastNow
 {
@@ -36,7 +36,7 @@ class GroupMessageSendEvent implements ShouldBroadcastNow
         $group = $this->message->group()->with('members')->first();
 
         if ($group) {
-            Log::info("📡 Broadcasting to group members", [
+            Log::info("Broadcasting to group members", [
                 'group_id' => $group->id,
                 'total_members' => $group->members->count()
             ]);
@@ -45,7 +45,7 @@ class GroupMessageSendEvent implements ShouldBroadcastNow
                 $channelName = "group-message.{$member->user_id}";
                 $channels[] = new PrivateChannel($channelName);
 
-                Log::info("✅ Adding channel", [
+                Log::info("Adding channel", [
                     'user_id' => $member->user_id,
                     'channel' => $channelName,
                     'is_sender' => $member->user_id == $this->message->sender_id
@@ -53,7 +53,7 @@ class GroupMessageSendEvent implements ShouldBroadcastNow
             }
         }
 
-        Log::info("📤 Total channels", ['count' => count($channels), 'channels' => array_map(function ($ch) {
+        Log::info("Total channels", ['count' => count($channels), 'channels' => array_map(function ($ch) {
             return $ch->name;
         }, $channels)]);
 
@@ -66,25 +66,7 @@ class GroupMessageSendEvent implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'message' => [
-                'id' => $this->message->id,
-                'group_id' => $this->message->group_id,
-                'sender_id' => $this->message->sender_id,
-                'text' => $this->message->text,
-                'file' => $this->message->file ? url($this->message->file) : null,
-                'created_at' => $this->message->created_at->toISOString(),
-                'sender' => [
-                    'id' => $this->message->sender->id,
-                    'first_name' => $this->message->sender->first_name,
-                    'last_name' => $this->message->sender->last_name,
-                    'avatar' => $this->message->sender->avatar ? url($this->message->sender->avatar) : null,
-                ],
-                'group' => [
-                    'id' => $this->message->group->id,
-                    'name' => $this->message->group->name,
-                    'avatar' => $this->message->group->avatar ? url($this->message->group->avatar) : null,
-                ]
-            ]
+            'message' => new MessageResource($this->message)
         ];
     }
 

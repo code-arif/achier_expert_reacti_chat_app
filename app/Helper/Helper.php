@@ -33,13 +33,31 @@ class Helper
             return null;
         }
 
-        $imageName = Str::slug($name) . '.' . $file->extension();
-        $path      = public_path('uploads/' . $folder);
+        // FIX: always use original extension
+        $ext = strtolower($file->getClientOriginalExtension());
+
+        // FIX: fallback for HEIC / HEIF / QuickTime
+        if (!$ext) {
+            $mime = $file->getMimeType();
+            $map = [
+                'image/heic' => 'heic',
+                'image/heif' => 'heif',
+                'video/quicktime' => 'mov',
+            ];
+            $ext = $map[$mime] ?? 'bin';
+        }
+
+        // FIX: DO NOT slug extension
+        $filename = Str::slug(pathinfo($name, PATHINFO_FILENAME)) . '.' . $ext;
+
+        $path = public_path("uploads/$folder");
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         }
-        $file->move($path, $imageName);
-        return 'uploads/' . $folder . '/' . $imageName;
+
+        $file->move($path, $filename);
+
+        return "uploads/$folder/$filename";
     }
 
 

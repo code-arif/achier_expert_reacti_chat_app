@@ -15,9 +15,9 @@ class ChatGroupResource extends JsonResource
             'description' => $this->description,
             'avatar' => $this->avatar ? asset($this->avatar) : asset('default/default_image.jpg'),
             'created_by' => $this->created_by,
-            'created_at' => $this->created_at->toISOString(),
-            'updated_at' => $this->updated_at->toISOString(),
-            'deleted_at' => $this->deleted_at ? $this->deleted_at->toISOString() : null,
+            'created_at' => $this->created_at->diffForHumans(short: true),
+            'updated_at' => $this->updated_at->diffForHumans(short: true),
+            'deleted_at' => $this->deleted_at ? $this->deleted_at->diffForHumans(short: true) : null,
 
             // Last message with relative time
             'last_message' => $this->when(isset($this->last_message), function () {
@@ -44,20 +44,33 @@ class ChatGroupResource extends JsonResource
                 ];
             }),
 
+
+
             'members' => $this->whenLoaded('members', function () {
+
+
                 return $this->members->map(function ($member) {
+
+                    $user = $member->user;
+
+                    // Determine role: if user is group creator → owner
+                    $role = $member->role ?? 'member'; // default from pivot
+                    if ($user->id === $this->created_by) {
+                        $role = 'owner'; // Force owner for creator
+                    }
+
                     return [
                         'id' => $member->id,
                         'group_id' => $member->group_id,
                         'user_id' => $member->user_id,
-                        'role' => $member->role,
-                        'joined_at' => $member->created_at->toISOString(),
+                        'role' => $role,
+                        'joined_at' => $member->created_at->diffForHumans(short: true),
                         'user' => [
                             'id' => $member->user->id,
                             'first_name' => $member->user->first_name,
                             'last_name' => $member->user->last_name,
                             'avatar' => $member->user->avatar ? asset($member->user->avatar) : asset('default/default_image.jpg'),
-                            'last_activity_at' => $member->user->last_activity_at ? $member->user->last_activity_at->toISOString() : null,
+                            'last_activity_at' => $member->user->last_activity_at ? $member->user->last_activity_at->diffForHumans(short: true) : null,
                         ],
                     ];
                 });

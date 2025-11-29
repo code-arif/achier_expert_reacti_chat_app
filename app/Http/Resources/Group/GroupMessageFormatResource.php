@@ -1,37 +1,29 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Group;
 
 use Illuminate\Http\Request;
-use App\Models\GroupMessageUserStatus;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class MessageResource extends JsonResource
+class GroupMessageFormatResource extends JsonResource
 {
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
     public function toArray(Request $request): array
     {
-
-        // Current authenticated user
-        $userId = auth('api')->id();
-
-        // Fetch per-user view/blur status
-        $status = GroupMessageUserStatus::where('message_id', $this->id)
-            ->where('user_id', $userId)
-            ->first();
-
         return [
             'id' => $this->id,
             'group_id' => (int) $this->group_id,
             'sender_id' => (int) $this->sender_id,
             'text' => $this->text,
             'file' => $this->file ? asset($this->file) : null,
-            'status'          => $this->status,
-
-            // These now come from group_message_user_statuses table
-            'is_blurred'    => $status->is_blurred ?? true,
-            'is_viewed'     => $status->is_viewed ?? false,
-
-            'message_type'    => $this->message_type ?? 'normal',
+            'status' => $this->status,
+            'is_blurred' => (bool) $this->is_blurred,
+            'is_viewed' => (bool) $this->is_viewed,
+            'message_type' => $this->message_type ?? 'normal',
             'created_at' => $this->created_at?->diffForHumans(),
 
             'sender' => [
@@ -48,6 +40,19 @@ class MessageResource extends JsonResource
                 'avatar' => isset($this->group->avatar) && $this->group->avatar ?
                     asset($this->group->avatar) : asset('default/default_image.jpg'),
             ],
+
+            // Adding statuses
+            'message_status' => $this->messageStatus->map(function ($status) {
+                return [
+                    'id' => $status->id,
+                    'message_id' => $status->message_id,
+                    'user_id' => $status->user_id,
+                    'is_viewed' => (bool) $status->is_viewed,
+                    'is_blurred' => (bool) $status->is_blurred,
+                    'created_at' => $status->created_at->diffForHumans(),
+                    'updated_at' => $status->updated_at->diffForHumans,
+                ];
+            })
         ];
     }
 }
