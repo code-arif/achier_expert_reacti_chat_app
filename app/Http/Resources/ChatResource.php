@@ -21,7 +21,7 @@ class ChatResource extends JsonResource
             'sender_id'       => $this->sender_id,
             'receiver_id'     => $this->receiver_id,
             'text'            => $this->text ?? '',
-            'file'            => $this->file ? public_path('' . $this->file) : null,
+            'file'            => $this->file ? asset('' . $this->file) : null,
             'room_id'         => $this->room_id,
             'status'          => $this->status,
             'is_blurred'      => (bool) $this->is_blurred,

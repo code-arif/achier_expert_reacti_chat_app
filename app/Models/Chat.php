@@ -45,13 +45,23 @@ class Chat extends Model
     ];
 
 
-    public function getFileAttribute($value): ?string
-    {
+    // public function getFileAttribute($value): ?string
+    // {
+    //     if (filter_var($value, FILTER_VALIDATE_URL)) {
+    //         return $value;
+    //     }
+
+    //     return $value ? url($value) : null;
+    // }
+
+    public function getFileAttribute($value){
         if (filter_var($value, FILTER_VALIDATE_URL)) {
             return $value;
         }
-
-        return $value ? url($value) : null;
+        if (request()->is('api/*') && !empty($value)) {
+            return url($value);
+        }
+        return $value;
     }
 
     public function getShortTextAttribute(): string | null

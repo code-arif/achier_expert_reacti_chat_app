@@ -69,7 +69,15 @@ class User extends Authenticatable implements JWTSubject
         'reset_password_token',
     ];
 
-
+    public function getAvatarAttribute($value){
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+        if (request()->is('api/*') && !empty($value)) {
+            return url($value);
+        }
+        return $value;
+    }
 
     //name getter
     public function getFirstNameAttribute($value): string
