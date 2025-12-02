@@ -22,15 +22,11 @@ class UserRegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'first_name' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-Z\s]+$/'],
-            'last_name' => ['nullable', 'string', 'min:2', 'max:100', 'regex:/^[a-zA-Z\s]+$/'],
-            'email' => ['required', 'string', 'email:rfc,dns', 'max:255', 'unique:users,email', 'lowercase'],
-            'phone' => [
-                'required',
-                'phone:BD',
-                'unique:users,phone',
-            ],
-            'password' => ['required', 'string', 'confirmed', 'min:8', 'max:64', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
+            'first_name' => ['required', 'string', 'min:2', 'max:100'],
+            'last_name' => ['nullable', 'string', 'min:2', 'max:100'],
+            'email' => ['required', 'string', 'unique:users,email'],
+            'phone' => ['required','string','unique:users,phone',],
+            'password' => ['required', 'string', 'confirmed', 'min:8'],
         ];
     }
 
@@ -50,11 +46,9 @@ class UserRegisterRequest extends FormRequest
             'email.unique' => 'This email address is already registered.',
             'phone.required' => 'Phone number is required.',
             'phone.unique' => 'This phone number is already registered.',
-            'phone.phone' => 'Please enter a valid phone number.',
             'password.required' => 'Password is required.',
             'password.min' => 'Password must be at least 8 characters long.',
             'password.confirmed' => 'Password confirmation does not match.',
-            'password.regex' => 'Password must contain at least one uppercase letter, one lowercase letter, and one number.',
         ];
     }
 
