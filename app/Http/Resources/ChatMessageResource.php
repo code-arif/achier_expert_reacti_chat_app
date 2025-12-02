@@ -70,7 +70,7 @@ class ChatMessageResource extends JsonResource
         $extension = strtolower(pathinfo($this->file, PATHINFO_EXTENSION));
 
         // Image types
-        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'];
+        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'heic', 'tiff', 'psd', 'raw', 'ai', 'heif',];
         if (in_array($extension, $imageExtensions)) {
             return 'image';
         }

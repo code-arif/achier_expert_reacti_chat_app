@@ -26,7 +26,7 @@ class GroupCreateController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'avatar' => 'nullable|max:5120',
             'members' => 'required|array|min:1',
             'members.*' => 'exists:users,id',
         ]);
@@ -235,7 +235,7 @@ class GroupCreateController extends Controller
     public function updateAvatar(Request $request, $group_id): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'avatar' => 'required|image|max:5120', // Max 5MB
+            'avatar' => 'required|max:5120', // Max 5MB
         ]);
 
         if ($validator->fails()) {

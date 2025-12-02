@@ -15,7 +15,7 @@ class Helper
             return null;
         }
 
-        $imageName = time() . '-' . Str::random(5) . '.' . $file->extension(); // Unique name
+        $imageName = time() . '-' . Str::random(5) . '.' . $file->getClientOriginalExtension(); // Unique name
         $path = public_path('uploads/' . $folder);
 
         if (!file_exists($path)) {

@@ -49,9 +49,7 @@ class GroupMessageController extends Controller
         // ---------------------------
         $file = null;
         if ($request->hasFile('file')) {
-            $uploadedFile = $request->file('file');
-            $fileName = time() . '_group_message.' . $uploadedFile->getClientOriginalExtension();
-            $file = Helper::fileUpload($uploadedFile, 'group_chat', $fileName);
+            $file = Helper::fileUpload($request->file('file'), 'group_message', time() . 'group_chat_image' . $request->file('file'));
         }
 
         // ---------------------------
