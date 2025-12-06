@@ -998,7 +998,8 @@
             document.addEventListener('DOMContentLoaded', function() {
                 Echo.private(`chat-receiver.${user_id}`)
                     .listen('MessageSendEvent', function(e) {
-                        console.log('Received event:', e); // Debugging
+                        alert('hello');
+                        console.log('Received event:', e);
                         toastr.success(e.data.text ?? "New file received");
                         let receiver_id = document.getElementById('ReceiverId').value;
                         if (receiver_id) {

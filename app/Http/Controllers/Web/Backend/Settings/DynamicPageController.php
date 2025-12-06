@@ -4,20 +4,18 @@ namespace App\Http\Controllers\Web\Backend\Settings;
 
 use Exception;
 use App\Models\User;
-use Illuminate\View\View;
 use App\Models\DynamicPage;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Validator;
 
-class DynamicPageController extends Controller {
-   
+class DynamicPageController extends Controller
+{
+
     use ApiResponse;
 
 
@@ -25,7 +23,7 @@ class DynamicPageController extends Controller {
     {
         try {
 
-            $data = DynamicPage::where('page_slug', 'privacy-policy')->where('status','active')->get();
+            $data = DynamicPage::where('page_slug', 'privacy-policy')->where('status', 'active')->get();
 
             if (!$data) {
                 return $this->success([], 'Privacy policy data not found.', 200);
@@ -37,7 +35,6 @@ class DynamicPageController extends Controller {
             Log::error($e->getMessage());
             return $this->error([], $e->getMessage(), 500);
         }
-
     }
 
 
@@ -45,7 +42,7 @@ class DynamicPageController extends Controller {
     {
         try {
 
-            $data = DynamicPage::where('page_slug', 'terms-and-condation')->where('status','active')->get();
+            $data = DynamicPage::where('page_slug', 'terms-and-condation')->where('status', 'active')->get();
 
             if (!$data) {
                 return $this->success([], 'terms-and-condation data not found.', 200);
@@ -57,11 +54,11 @@ class DynamicPageController extends Controller {
             Log::error($e->getMessage());
             return $this->error([], $e->getMessage(), 500);
         }
-
     }
 
-    
-    public function index(Request $request) {
+
+    public function index(Request $request)
+    {
 
         if ($request->ajax()) {
             $data = DynamicPage::latest();
@@ -76,7 +73,7 @@ class DynamicPageController extends Controller {
                     $short_page_content = strlen($page_content) > 100 ? substr($page_content, 0, 100) . '...' : $page_content;
                     return '<p>' . $short_page_content . '</p>';
                 })
-                
+
                 ->addColumn('status', function ($data) {
                     $backgroundColor = $data->status == "active" ? '#4CAF50' : '#ccc';
                     $sliderTranslateX = $data->status == "active" ? '26px' : '2px';
@@ -101,29 +98,68 @@ class DynamicPageController extends Controller {
                             </div>';
                 })
 
-              
+
                 ->rawColumns(['page_content', 'status', 'action'])
                 ->make();
         }
         return view('backend.layouts.settings.dynamic_page.index');
     }
 
-   
-    public function edit(int $id) {
-        try{
+    public function create()
+    {
+        try {
+            if (User::find(auth()->user()->id)) {
+                return view('backend.layouts.settings.dynamic_page.create');
+            }
+            return redirect()->route('admin.dynamic_page.index');
+        } catch (Exception $e) {
+            return redirect()->route('admin.dynamic_page.index')->with('t-error', 'Permission Denied.');
+        }
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'page_title'   => 'required|string|max:255',
+                'page_content' => 'required|string',
+            ]);
+
+            if ($validator->fails()) {
+                return redirect()->back()->withErrors($validator)->withInput();
+            }
+
+            DynamicPage::create([
+                'page_title'   => $request->page_title,
+                'page_slug'    => Str::slug($request->page_title),
+                'page_content' => $request->page_content,
+                'status'       => 'active'
+            ]);
+
+            return redirect()->route('admin.dynamic_page.index')->with('t-success', 'Dynamic Page Created Successfully.');
+        } catch (Exception $e) {
+            return redirect()->route('admin.dynamic_page.index')->with('t-error', 'Failed to Create Dynamic Page.');
+        }
+    }
+
+
+
+    public function edit(int $id)
+    {
+        try {
             if (User::find(auth()->user()->id)) {
                 $data = DynamicPage::find($id);
                 return view('backend.layouts.settings.dynamic_page.edit', compact('data'));
             }
             return redirect()->route('admin.dynamic_page.index');
-        }catch(Exception $e){
+        } catch (Exception $e) {
             return redirect()->route('admin.dynamic_page.index')->with('t-error', 'Permission Denied');
         }
-        
     }
 
-  
-    public function update(Request $request, int $id) {
+
+    public function update(Request $request, int $id)
+    {
         try {
             if (User::find(auth()->user()->id)) {
                 $validator = Validator::make($request->all(), [
@@ -151,7 +187,8 @@ class DynamicPageController extends Controller {
     }
 
 
-    public function status(int $id) {
+    public function status(int $id)
+    {
         $data = DynamicPage::findOrFail($id);
         if ($data->status == 'active') {
             $data->status = 'inactive';
@@ -175,7 +212,8 @@ class DynamicPageController extends Controller {
     }
 
 
-    public function destroy(int $id) {
+    public function destroy(int $id)
+    {
         $page = DynamicPage::find($id);
         $page->delete();
         return response()->json([

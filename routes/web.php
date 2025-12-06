@@ -1,9 +1,10 @@
 <?php
 
+use App\Models\DynamicPage;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Broadcast;
-use App\Models\DynamicPage;
+use App\Http\Controllers\Web\Backend\Pages\PrivacyPolicyController;
 
 
 Route::get('/', function () {

@@ -1,21 +1,22 @@
 <?php
 
-use App\Http\Controllers\Api\User\UserBlockController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Chat\ChatController;
 use App\Http\Controllers\Api\User\UserController;
 use App\Http\Controllers\Api\Chat\GroupChatController;
 use App\Http\Controllers\Api\Friend\FriendsController;
+use App\Http\Controllers\Api\User\UserBlockController;
 use App\Http\Controllers\Api\Auth\SocialLoginController;
 use App\Http\Controllers\Api\Auth\UserProfileController;
 use App\Http\Controllers\Api\Friend\FindFriendController;
-use App\Http\Controllers\Api\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\Friend\ReportUserController;
+use App\Http\Controllers\Api\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\Auth\AuthenticationController;
-use App\Http\Controllers\Api\Chat\Group\GroupCreateController;
-use App\Http\Controllers\Api\Chat\Group\GroupManageMemberController;
-use App\Http\Controllers\Api\Chat\Group\GroupMessageController;
+use App\Http\Controllers\Api\Pages\PrivacyPolicyController;
 use App\Http\Controllers\Api\Friend\FriendRequestController;
+use App\Http\Controllers\Api\Chat\Group\GroupCreateController;
+use App\Http\Controllers\Api\Chat\Group\GroupMessageController;
+use App\Http\Controllers\Api\Chat\Group\GroupManageMemberController;
 
 //health-check
 Route::get("/check", function () {
