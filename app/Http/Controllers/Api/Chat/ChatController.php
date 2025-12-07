@@ -281,7 +281,7 @@ class ChatController extends Controller
             ->where('user_id', $sender_id)
             ->where('block_user_id', $receiver_id)->orWhere(function ($query) use ($sender_id, $receiver_id) {
                 $query->where('user_id', $receiver_id)
-                      ->where('block_user_id', $sender_id);
+                    ->where('block_user_id', $sender_id);
             })
             ->exists();
 
@@ -470,34 +470,48 @@ class ChatController extends Controller
     /*
     * Delete messages
     */
-    public function deleteMessages(Request $request): JsonResponse
+    public function deleteMessage(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'message_ids' => 'required|array|min:1',
-            'message_ids.*' => 'exists:chats,id',
+            'message_id' => 'required|exists:chats,id',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['message' => $validator->errors()->first()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'data' => null,
+                'code' => 422
+            ], 422);
         }
 
         $authUser = Auth::guard('api')->user();
 
-        // Delete only messages where user is sender or receiver
-        $deleted = Chat::whereIn('id', $request->message_ids)
+        // Delete only if user is sender or receiver
+        $deleted = Chat::where('id', $request->message_id)
             ->where(function ($query) use ($authUser) {
                 $query->where('sender_id', $authUser->id)
                     ->orWhere('receiver_id', $authUser->id);
             })
             ->delete();
 
+        if ($deleted) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Message deleted successfully',
+                'data' => ['deleted_count' => $deleted],
+                'code' => 200
+            ]);
+        }
+
         return response()->json([
-            'success' => true,
-            'message' => 'Messages deleted successfully',
-            'data' => ['deleted_count' => $deleted],
-            'code' => 200
-        ]);
+            'success' => false,
+            'message' => 'Message not found or you do not have permission to delete it',
+            'data' => null,
+            'code' => 404
+        ], 404);
     }
+
 
     /**
      * combined message list
