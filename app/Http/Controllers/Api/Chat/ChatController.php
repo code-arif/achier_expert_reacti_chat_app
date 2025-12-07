@@ -276,8 +276,15 @@ class ChatController extends Controller
             ]);
         }
 
+        // Check if sender is blocked by receiver
         $is_blocked = DB::table('user_blocks')
             ->where('user_id', $sender_id)
+            ->where('block_user_id', $receiver_id)
+            ->exists();
+
+        // Check if sender has blocked the receiver
+        $block_by_me = DB::table('user_blocks')
+            ->where('user_id', $sender_id) // I blocked?
             ->where('block_user_id', $receiver_id)
             ->exists();
 
@@ -297,6 +304,7 @@ class ChatController extends Controller
                 'per_page' => $chat->perPage(),
             ],
             'is_blocked' => $is_blocked,
+            'block_by_me' => $block_by_me,
         ];
 
         return response()->json([
