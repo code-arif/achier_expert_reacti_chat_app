@@ -279,7 +279,10 @@ class ChatController extends Controller
         // Check if sender is blocked by receiver
         $is_blocked = DB::table('user_blocks')
             ->where('user_id', $sender_id)
-            ->where('block_user_id', $receiver_id)
+            ->where('block_user_id', $receiver_id)->orWhere(function ($query) use ($sender_id, $receiver_id) {
+                $query->where('user_id', $receiver_id)
+                      ->where('block_user_id', $sender_id);
+            })
             ->exists();
 
         // Check if sender has blocked the receiver
