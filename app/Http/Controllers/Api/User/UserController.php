@@ -51,6 +51,12 @@ class UserController extends Controller
 
             $friendIds = $sent->union($received)->pluck('user_id');
 
+            // Preload sent friend request IDs
+            $sentRequests = DB::table('friend_requests')
+                ->where('sender_id', $currentUser->id)
+                ->where('status', 'pending')
+                ->pluck('receiver_id');
+
             $perPage = $request->get('per_page', 15);
             $search = $request->get('search');
 
@@ -69,13 +75,13 @@ class UserController extends Controller
 
             $users = $query->paginate($perPage);
 
-            // Add is_friend flag
-            $users->getCollection()->transform(function ($user) use ($friendIds) {
+            // Add flags: is_friend & is_request_sent
+            $users->getCollection()->transform(function ($user) use ($friendIds, $sentRequests) {
                 $user->is_friend = $friendIds->contains($user->id);
+                $user->is_request_sent = $sentRequests->contains($user->id);
                 return $user;
             });
 
-            // Return clean response
             return $this->success(
                 new UserListResource($users),
                 'Users retrieved successfully.'
