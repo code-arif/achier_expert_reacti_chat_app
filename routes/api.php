@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Chat\ChatController;
 use App\Http\Controllers\Api\User\UserController;
-use App\Http\Controllers\Api\Chat\GroupChatController;
 use App\Http\Controllers\Api\Friend\FriendsController;
 use App\Http\Controllers\Api\User\UserBlockController;
 use App\Http\Controllers\Api\Auth\SocialLoginController;
@@ -12,7 +11,6 @@ use App\Http\Controllers\Api\Friend\FindFriendController;
 use App\Http\Controllers\Api\Friend\ReportUserController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\Auth\AuthenticationController;
-use App\Http\Controllers\Api\Pages\PrivacyPolicyController;
 use App\Http\Controllers\Api\Friend\FriendRequestController;
 use App\Http\Controllers\Api\Chat\Group\GroupCreateController;
 use App\Http\Controllers\Api\Chat\Group\GroupMessageController;
@@ -89,11 +87,6 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('/list', [UserBlockController::class, 'blockedUsers']); // working
     });
 
-    // //Notification
-    // Route::get('/my-notifications', [NotificationController::class, 'allNotifications']); //get all notification
-    // Route::post('/read-notification/{id}', [NotificationController::class, 'readNotification']); //mark as read single notification
-    // Route::post('/read-all-notifications', [NotificationController::class, 'readAllNotifications']); //mark as read all notification
-
     Route::middleware(['auth:api'])->controller(ChatController::class)->prefix('auth/chat')->group(function () {
         Route::get('/list', 'listCombined'); // working
         Route::post('/send/{receiver_id}', 'send'); // working
@@ -137,4 +130,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('/{group}/available-users', [GroupManageMemberController::class, 'availableUsers']);
 
     });
+
+    // Privacy Policy and Terms & Conditions
+    Route::get('/privacy-policy', [\App\Http\Controllers\Api\PrivacyController::class, 'index']); //
 });
