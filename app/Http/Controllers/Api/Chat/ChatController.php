@@ -79,10 +79,16 @@ class ChatController extends Controller
             $isBlurred = true;
         }
 
+        $text = $request->text ?? '';
+
+        if (!mb_check_encoding($text, 'UTF-8')) {
+            $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+        }
+
         $chat = Chat::create([
             'sender_id' => $sender_id,
             'receiver_id' => $receiver_id,
-            'text' => $request->text,
+            'text' => $text,
             'file' => $file,
             'room_id' => $room->id,
             'status' => 'sent',

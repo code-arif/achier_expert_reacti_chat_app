@@ -15,37 +15,47 @@ class MessageSendEvent implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $chat;
-
-    // public function __construct($data)
-    // {
-    //     $this->data = $data;
-
-    //     Log::info("Broadcasting message event", ['chat' => $this->data]);
-    // }
+    public $payload;
 
     public function __construct($chat)
     {
-        $this->chat = $chat;
+        // Convert ChatResource → clean array
+        $resource = new ChatResource($chat);
 
-        Log::info("Broadcasting message event", [
-            'chat' => new ChatResource($chat)
-        ]);
+        // Convert to array manually
+        $this->payload = $resource->resolve();
     }
+
+    // public function broadcastOn(): array
+    // {
+    //     return [
+    //         new PrivateChannel("chat-room.{$this->chat->room_id}"),
+    //         new PrivateChannel("chat-receiver.{$this->chat->receiver_id}"),
+    //         new PrivateChannel("chat-sender.{$this->chat->sender_id}")
+    //     ];
+    // }
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("chat-room.{$this->chat->room_id}"),
-            new PrivateChannel("chat-receiver.{$this->chat->receiver_id}"),
-            new PrivateChannel("chat-sender.{$this->chat->sender_id}")
+            new PrivateChannel("chat-room.{$this->payload['room_id']}"),
+            new PrivateChannel("chat-receiver.{$this->payload['receiver_id']}"),
+            new PrivateChannel("chat-sender.{$this->payload['sender_id']}")
         ];
     }
 
     //
+    // public function broadcastWith(): array
+    // {
+    //     return [
+    //         'chat' => new ChatResource($this->chat),
+    //     ];
+    // }
+
     public function broadcastWith(): array
     {
         return [
-            'chat' => new ChatResource($this->chat),
+            'chat' => $this->payload
         ];
     }
 }
