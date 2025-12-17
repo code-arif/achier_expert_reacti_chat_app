@@ -82,4 +82,33 @@ class FriendsController extends Controller
             $profileUser->first_name . '\'s friend list fetched successfully.'
         );
     }
+
+    // user unfriend
+    public function unfriend($friendId)
+    {
+        $user = auth('api')->user();
+
+        // Check if they are friends
+        $friendship = DB::table('friends')
+            ->where(function ($query) use ($user, $friendId) {
+                $query->where('user_id', $user->id)
+                    ->where('friend_id', $friendId);
+            })
+            ->orWhere(function ($query) use ($user, $friendId) {
+                $query->where('user_id', $friendId)
+                    ->where('friend_id', $user->id);
+            })
+            ->first();
+
+        if (!$friendship) {
+            return $this->error('You are not friends with this user.', 400);
+        }
+
+        // Delete the friendship
+        DB::table('friends')
+            ->where('id', $friendship->id)
+            ->delete();
+
+        return $this->success(null, 'You have successfully unfriended this user.');
+    }
 }

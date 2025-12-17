@@ -70,6 +70,8 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('/list', [FriendsController::class, 'friendList']); // all firend list all auth user
 
         Route::get('/users/{user}/', [FriendsController::class, 'userFriendList']); // Get another user's friend list
+
+        Route::delete('/unfriend/{id}', [FriendsController::class, 'unfriend']);
     });
 
     // Get user details

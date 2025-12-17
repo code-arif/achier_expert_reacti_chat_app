@@ -166,25 +166,6 @@ class UserProfileController extends Controller
         try {
             $user = auth('api')->user();
 
-            // Validate password
-            $validator = Validator::make($request->all(), [
-                'password' => ['required', 'string'],
-            ]);
-
-            if ($validator->fails()) {
-                return $this->error([], $validator->errors()->first(), 422);
-            }
-
-            // Check if user has password (for social login users)
-            if (!$user->password) {
-                return $this->error([], 'Cannot delete account. Please contact support.', 400);
-            }
-
-            // Verify password
-            if (!Hash::check($request->password, $user->password)) {
-                return $this->error([], 'Password is incorrect.', 401);
-            }
-
             // Delete images
             if ($user->avatar) {
                 Helper::deleteImage($user->avatar);
