@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.2",
         "intervention/image": "^3.11",
+        "kreait/laravel-firebase": "^5.8",
         "laravel/breeze": "^2.3",
         "laravel/cashier": "^15.6",
         "laravel/framework": "^11.31",

@@ -2,8 +2,15 @@
 
 namespace App\Helper;
 
+use Exception;
 use App\Models\User;
 use Illuminate\Support\Str;
+use Kreait\Firebase\Factory;
+use Illuminate\Support\Facades\Log;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Notification;
+use Kreait\Laravel\Firebase\Facades\Firebase;
+
 
 class Helper
 {
@@ -159,5 +166,26 @@ class Helper
         }
 
         return $username;
+    }
+
+
+    public static function sendNotifyMobile($token, $notifyData): void
+    {
+        try {
+            $messaging = Firebase::messaging();
+
+            $notification = Notification::create(
+                $notifyData['title'],
+                Str::limit($notifyData['body'], 100),
+                $notifyData['icon']
+            );
+
+            $message = CloudMessage::withTarget('token', $token)
+                ->withNotification($notification);
+
+            $messaging->send($message);
+        } catch (\Throwable $e) {
+            Log::error($e->getMessage());
+        }
     }
 }

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Group;
 use App\Helper\Helper;
 use App\Traits\ApiResponse;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Events\MessageSendEvent;
 use Illuminate\Http\JsonResponse;
@@ -104,6 +105,41 @@ class ChatController extends Controller
         ]);
 
         broadcast(new MessageSendEvent($chat))->toOthers();
+
+        // ========== NOTIFICATION PART ==========
+        $receiver = User::find($receiver_id);
+        if ($receiver && $receiver->firebaseTokens) {
+            $senderName = Auth::guard('api')->user()->first_name . ' ' . Auth::guard('api')->user()->last_name;
+
+            // Message preview create
+            $messagePreview = '';
+            if ($file) {
+                // File type detect
+                $extension = pathinfo($file, PATHINFO_EXTENSION);
+                $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                $videoExtensions = ['mp4', 'mov', 'avi', 'mkv'];
+
+                if (in_array(strtolower($extension), $imageExtensions)) {
+                    $messagePreview = '📷 Photo';
+                } elseif (in_array(strtolower($extension), $videoExtensions)) {
+                    $messagePreview = '🎥 Video';
+                } else {
+                    $messagePreview = '📎 File';
+                }
+            } else {
+                $messagePreview = Str::limit($text, 50);
+            }
+
+            $notifyData = [
+                'title' => $senderName,
+                'body'  => $messagePreview,
+                'icon'  => Auth::guard('api')->user()->avatar ?? config('settings.logo')
+            ];
+
+            foreach ($receiver->firebaseTokens as $firebaseToken) {
+                Helper::sendNotifyMobile($firebaseToken->token, $notifyData);
+            }
+        }
 
         return response()->json([
             'success' => true,

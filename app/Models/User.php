@@ -69,7 +69,8 @@ class User extends Authenticatable implements JWTSubject
         'reset_password_token',
     ];
 
-    public function getAvatarAttribute($value){
+    public function getAvatarAttribute($value)
+    {
         if (filter_var($value, FILTER_VALIDATE_URL)) {
             return $value;
         }
@@ -181,5 +182,10 @@ class User extends Authenticatable implements JWTSubject
     public function groupMessages()
     {
         return $this->hasMany(GroupMessage::class, 'sender_id');
+    }
+
+    public function firebaseTokens()
+    {
+        return $this->hasMany(FirebaseTokens::class);
     }
 }

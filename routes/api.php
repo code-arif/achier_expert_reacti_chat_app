@@ -1,8 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\PrivacyController;
 use App\Http\Controllers\Api\Chat\ChatController;
 use App\Http\Controllers\Api\User\UserController;
+use App\Http\Controllers\Api\FirebaseTokenController;
 use App\Http\Controllers\Api\Friend\FriendsController;
 use App\Http\Controllers\Api\User\UserBlockController;
 use App\Http\Controllers\Api\Auth\SocialLoginController;
@@ -130,9 +132,16 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::post('/{group_id}/leave', [GroupManageMemberController::class, 'leaveGroup']); // working
         Route::delete('/{group_id}/delete', [GroupManageMemberController::class, 'deleteGroup']); // working
         Route::get('/{group}/available-users', [GroupManageMemberController::class, 'availableUsers']);
-
     });
 
     // Privacy Policy and Terms & Conditions
-    Route::get('/privacy-policy', [\App\Http\Controllers\Api\PrivacyController::class, 'index']); //
+    Route::get('/privacy-policy', [PrivacyController::class, 'index']); //
+
+
+    Route::middleware(['auth:api'])->controller(FirebaseTokenController::class)->prefix('firebase')->group(function () {
+        Route::get("test", "test");
+        Route::post("token/add", "store");
+        Route::post("token/get", "getToken");
+        Route::post("token/delete", "deleteToken");
+    });
 });

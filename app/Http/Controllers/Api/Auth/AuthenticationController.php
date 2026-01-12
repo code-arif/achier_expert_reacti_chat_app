@@ -5,19 +5,20 @@ namespace App\Http\Controllers\Api\Auth;
 use Exception;
 use Carbon\Carbon;
 use App\Models\User;
+use App\Helper\Helper;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use App\Mail\EmailVerifyMail;
+use App\Models\FirebaseTokens;
+use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\LoginRequest as ApiLoginRequest;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
-use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\Auth\UserRegisterRequest;
-use App\Helper\Helper;
+use App\Http\Requests\Api\LoginRequest as ApiLoginRequest;
 
 class AuthenticationController extends Controller
 {
@@ -73,8 +74,7 @@ class AuthenticationController extends Controller
             return $this->success([
                 'email' => $email,
                 'expires_in' => '5 minutes',
-                'username' => $username, // Optional: show in response
-                'otp' => $otp . ' (Testing only)',
+                'username' => $username,
             ], 'OTP sent successfully. Please check your email.');
         } catch (Exception $e) {
             Log::error('Registration OTP Error: ' . $e->getMessage());
@@ -261,15 +261,47 @@ class AuthenticationController extends Controller
     /*
     ** User logout
     */
-    public function logout()
+    public function logout(Request $request)
     {
         try {
+            // First get user before logout
+            $user = auth('api')->user();
+
+            // Log koro debugging er jonno
+            Log::info('Logout attempt', [
+                'user_id' => $user ? $user->id : null,
+                'device_id' => $request->device_id ?? null
+            ]);
+
+            // Validate device_id - optional banao (jodi frontend theke na ashe)
+            if ($request->has('device_id')) {
+                $validator = Validator::make($request->all(), [
+                    'device_id' => 'required|string'
+                ]);
+
+                if ($validator->fails()) {
+                    return $this->error([], $validator->errors()->first(), 422);
+                }
+
+                // Firebase token delete - only if user exists
+                if ($user) {
+                    $deleted = FirebaseTokens::where('user_id', $user->id)
+                        ->where('device_id', $request->device_id)
+                        ->delete();
+
+                    Log::info('Token deleted', ['count' => $deleted]);
+                }
+            }
+
+            // Logout
             auth('api')->logout();
+
             return $this->success([], 'Successfully logged out.', 200);
         } catch (Exception $e) {
-
-            Log::info($e->getMessage());
-            return $this->error([], $e->getMessage(), 500);
+            Log::error('Logout error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->error([], 'Logout failed: ' . $e->getMessage(), 500);
         }
     }
 }
