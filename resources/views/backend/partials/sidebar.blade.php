@@ -38,7 +38,7 @@
                 </li>
 
                 {{-- chat --}}
-                {{-- <li class="slide">
+                <li class="slide">
                     <a class="side-menu__item {{ request()->routeIs('chat') ? 'has-link' : '' }}"
                         href="{{ route('admin.chat.index') }}">
                         <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" width="24" height="24"
@@ -49,7 +49,7 @@
                         </svg>
                         <span class="side-menu__label">Chat</span>
                     </a>
-                </li> --}}
+                </li>
 
                 {{-- group chat --}}
                 {{-- <li class="slide">
