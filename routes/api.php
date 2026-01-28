@@ -104,6 +104,12 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::post('/mark-viewed/{message_id}', 'markAsViewed'); // wroking
     });
 
+    /*
+    |--------------------------------------------------------------------------
+    | Chatting System Version 2.0 Routes
+    |--------------------------------------------------------------------------
+    */
+
 
     // New group chat routes
     Route::middleware(['auth:api'])->prefix('auth/group')->group(function () {
