@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class GroupMessage extends Model
 {
@@ -18,7 +20,8 @@ class GroupMessage extends Model
         'status',
         'is_blurred',
         'is_viewed',
-        'message_type'
+        'message_type',
+        'reply_to_message_id'
     ];
 
     protected $casts = [
@@ -51,5 +54,21 @@ class GroupMessage extends Model
     public function messageStatus()
     {
         return $this->hasMany(GroupMessageUserStatus::class, 'message_id');
+    }
+
+    /**
+     * The message this message is replying to
+     */
+    public function replyTo(): BelongsTo
+    {
+        return $this->belongsTo(GroupMessage::class, 'reply_to_message_id');
+    }
+
+    /**
+     * All replies to this message
+     */
+    public function replies(): HasMany
+    {
+        return $this->hasMany(GroupMessage::class, 'reply_to_message_id');
     }
 }

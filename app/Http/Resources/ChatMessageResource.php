@@ -40,6 +40,40 @@ class ChatMessageResource extends JsonResource
             // Media Type Detection
             'media_type' => $this->getMediaType(),
 
+            // Reply block
+            'reply_to' => $this->whenLoaded('replyTo', function () {
+                $replied = $this->replyTo;
+
+                if (!$replied) return null;
+
+                // Media type detect
+                $mediaType = null;
+                if ($replied->file) {
+                    $ext = strtolower(pathinfo($replied->file, PATHINFO_EXTENSION));
+                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']))      $mediaType = 'image';
+                    elseif (in_array($ext, ['mp4', 'mov', 'avi', 'mkv', 'webm']))         $mediaType = 'video';
+                    elseif (in_array($ext, ['mp3', 'wav', 'ogg', 'aac', 'm4a']))          $mediaType = 'audio';
+                    elseif (in_array($ext, ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt']))  $mediaType = 'document';
+                    else $mediaType = 'file';
+                }
+
+                return [
+                    'id'         => $replied->id,
+                    'sender_id'  => (int) $replied->sender_id,
+                    'text'       => $replied->text,
+                    'file'       => $replied->file ? asset($replied->file) : null,
+                    'media_type' => $mediaType,
+                    'sender'     => [
+                        'id'         => $replied->sender->id ?? null,
+                        'first_name' => $replied->sender->first_name ?? null,
+                        'last_name'  => $replied->sender->last_name ?? null,
+                        'avatar'     => isset($replied->sender->avatar) && $replied->sender->avatar
+                            ? asset($replied->sender->avatar)
+                            : asset('default/default_image.jpg'),
+                    ],
+                ];
+            }),
+
             'sender' => [
                 'id' => $this->sender->id,
                 'first_name' => $this->sender->first_name,

@@ -36,7 +36,30 @@ class MessageResource extends JsonResource
 
 
             // Media Type Detection
-            'media_type' => $this->getMediaType(),
+            'media_type' => $this->resolveMediaType($this->file),
+
+            // Reply block
+            'reply_to' => $this->whenLoaded('replyTo', function () {
+                $replied = $this->replyTo;
+
+                if (!$replied) return null;
+
+                return [
+                    'id'         => $replied->id,
+                    'sender_id'  => (int) $replied->sender_id,
+                    'text'       => $replied->text,
+                    'file'       => $replied->file ? asset($replied->file) : null,
+                    'media_type' => $this->resolveMediaType($replied->file),
+                    'sender'     => [
+                        'id'         => $replied->sender->id ?? null,
+                        'first_name' => $replied->sender->first_name ?? null,
+                        'last_name'  => $replied->sender->last_name ?? null,
+                        'avatar'     => isset($replied->sender->avatar) && $replied->sender->avatar
+                            ? asset($replied->sender->avatar)
+                            : asset('default/default_image.jpg'),
+                    ],
+                ];
+            }),
 
             'sender' => [
                 'id' => $this->sender->id ?? null,
@@ -59,46 +82,24 @@ class MessageResource extends JsonResource
     /**
      * Detect media type from file extension
      */
-    private function getMediaType(): ?string
+    protected function resolveMediaType(?string $file): ?string
     {
-        if (!$this->file) {
-            return null;
-        }
+        if (!$file) return null;
 
-        // Extract file extension
-        $extension = strtolower(pathinfo($this->file, PATHINFO_EXTENSION));
+        $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 
-        // Image types
-        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'heif', 'heic', 'tiff', 'raw'];
-        if (in_array($extension, $imageExtensions)) {
-            return 'image';
-        }
-
-        // Video types
-        $videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'flv', 'wmv', 'webm', '3gp', 'mpeg', 'mpg'];
-        if (in_array($extension, $videoExtensions)) {
-            return 'video';
-        }
-
-        // Audio types
-        $audioExtensions = ['mp3', 'wav', 'ogg', 'aac', 'm4a', 'flac', 'wma'];
-        if (in_array($extension, $audioExtensions)) {
-            return 'audio';
-        }
-
-        // Document types
+        $imageExtensions    = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'heif', 'heic', 'tiff', 'raw'];
+        $videoExtensions    = ['mp4', 'mov', 'avi', 'mkv', 'flv', 'wmv', 'webm', '3gp', 'mpeg', 'mpg'];
+        $audioExtensions    = ['mp3', 'wav', 'ogg', 'aac', 'm4a', 'flac', 'wma'];
         $documentExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf', 'csv'];
-        if (in_array($extension, $documentExtensions)) {
-            return 'document';
-        }
+        $archiveExtensions  = ['zip', 'rar', '7z', 'tar', 'gz'];
 
-        // Archive types
-        $archiveExtensions = ['zip', 'rar', '7z', 'tar', 'gz'];
-        if (in_array($extension, $archiveExtensions)) {
-            return 'archive';
-        }
+        if (in_array($extension, $imageExtensions))    return 'image';
+        if (in_array($extension, $videoExtensions))    return 'video';
+        if (in_array($extension, $audioExtensions))    return 'audio';
+        if (in_array($extension, $documentExtensions)) return 'document';
+        if (in_array($extension, $archiveExtensions))  return 'archive';
 
-        // Default for unknown types
         return 'file';
     }
 }

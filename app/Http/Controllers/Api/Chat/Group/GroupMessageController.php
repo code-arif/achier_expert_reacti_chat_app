@@ -27,6 +27,7 @@ class GroupMessageController extends Controller
             'text' => 'nullable|string|max:1000',
             'file' => 'nullable|max:51200',
             'message_type' => 'nullable|in:normal,reaction',
+            'reply_to_message_id' => 'nullable|exists:group_messages,id',
         ]);
 
         if ($validator->fails()) {
@@ -73,6 +74,7 @@ class GroupMessageController extends Controller
             'file' => $file,
             'status' => 'sent',
             'message_type' => $messageType,
+            'reply_to_message_id' => $request->reply_to_message_id,
         ]);
 
         // ---------------------------
@@ -89,9 +91,15 @@ class GroupMessageController extends Controller
         // ---------------------------
         // PRE-LOAD RELATIONS
         // ---------------------------
+        // $message->load([
+        //     'sender:id,first_name,last_name,avatar,last_activity_at',
+        //     'group:id,name,avatar'
+        // ]);
+
         $message->load([
             'sender:id,first_name,last_name,avatar,last_activity_at',
-            'group:id,name,avatar'
+            'group:id,name,avatar',
+            'replyTo.sender:id,first_name,last_name,avatar', // ✅ নতুন
         ]);
 
         // ---------------------------
@@ -177,11 +185,21 @@ class GroupMessageController extends Controller
         }
 
         $perPage = 10000000;
+        // $messages = GroupMessage::where('group_id', $group_id)
+        //     ->with([
+        //         'sender:id,first_name,last_name,avatar,last_activity_at',
+        //         'reads.user:id,first_name,last_name',
+        //         'messageStatus'
+        //     ])
+        //     ->orderBy('created_at', 'asc')
+        //     ->paginate($perPage);
+
         $messages = GroupMessage::where('group_id', $group_id)
             ->with([
                 'sender:id,first_name,last_name,avatar,last_activity_at',
                 'reads.user:id,first_name,last_name',
-                'messageStatus'
+                'messageStatus',
+                'replyTo.sender:id,first_name,last_name,avatar', // ✅ নতুন
             ])
             ->orderBy('created_at', 'asc')
             ->paginate($perPage);

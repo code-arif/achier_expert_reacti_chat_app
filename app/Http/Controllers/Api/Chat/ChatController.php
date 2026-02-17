@@ -34,6 +34,7 @@ class ChatController extends Controller
             'text' => 'nullable|string|max:1000',
             'file' => 'nullable',
             'message_type' => 'nullable|in:normal,reaction', // New field
+            'reply_to_id'  => 'nullable|exists:chats,id',
         ]);
 
         if ($validator->fails()) {
@@ -96,12 +97,14 @@ class ChatController extends Controller
             'is_blurred' => $isBlurred,
             'is_viewed' => false,
             'message_type' => $messageType,
+            'reply_to_id'  => $request->reply_to_id, // New
         ]);
 
         $chat->load([
             'sender:id,first_name,last_name,avatar,last_activity_at',
             'receiver:id,first_name,last_name,avatar,last_activity_at',
-            'room:id,user_one_id,user_two_id'
+            'room:id,user_one_id,user_two_id',
+            'replyTo.sender:id,first_name,last_name,avatar',
         ]);
 
         broadcast(new MessageSendEvent($chat))->toOthers();
@@ -206,6 +209,7 @@ class ChatController extends Controller
                 'sender:id,first_name,last_name,avatar,last_activity_at',
                 'receiver:id,first_name,last_name,avatar,last_activity_at',
                 'room:id,user_one_id,user_two_id',
+                'replyTo.sender:id,first_name,last_name,avatar',
             ])
             ->orderBy('created_at')
             ->paginate($perPage);
@@ -536,7 +540,7 @@ class ChatController extends Controller
             $groupsQuery->where('name', 'LIKE', "%{$keyword}%");
         }
 
-        // 
+        //
         $groups = collect($groupsQuery->get()->map(function ($group) {
             $lastMessage = $group->messages()->latest()->first();
 
