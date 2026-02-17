@@ -14,13 +14,14 @@ use Illuminate\Http\Request;
 use App\Events\MessageSendEvent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\ChatResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\ChatMessageResource;
+use App\Http\Resources\Chat\V2\ChatResource;
 use App\Http\Resources\CombinedChatCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -36,9 +37,9 @@ class SingleChatController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'text' => 'nullable|string|max:5000',
-            'file' => 'nullable|file|max:51200', // 50MB max
+            'file' => 'nullable|file|max:102400', // 50MB max
             'message_type' => 'nullable|in:normal,reaction,reply',
-            'reply_to_id' => 'nullable|exists:chats,id', // For reply feature
+            'reply_to_id' => 'nullable|exists:chats,id',
         ]);
 
         if ($validator->fails()) {
@@ -78,7 +79,7 @@ class SingleChatController extends Controller
             ], 403);
         }
 
-        // Find or create room with optimized query
+        // Find or create room
         $room = Room::firstOrCreate([
             'user_one_id' => min($sender_id, $receiver_id),
             'user_two_id' => max($sender_id, $receiver_id)
@@ -87,34 +88,74 @@ class SingleChatController extends Controller
         $file = null;
         $fileType = null;
         $thumbnailPath = null;
+        $filePath = null;
 
-        // Upload file to S3 with optimization
+        // Upload file to S3 with proper error handling
         if ($request->hasFile('file')) {
-            $uploadedFile = $request->file('file');
-            $mimeType = $uploadedFile->getMimeType();
+            try {
+                $uploadedFile = $request->file('file');
+                $mimeType = $uploadedFile->getMimeType();
 
-            // Determine file type
-            if (Str::startsWith($mimeType, 'image/')) {
-                $fileType = 'image';
-                // Generate thumbnail for images
-                $thumbnailPath = $this->generateThumbnail($uploadedFile);
-            } elseif (Str::startsWith($mimeType, 'video/')) {
-                $fileType = 'video';
-                // Generate video thumbnail
-                $thumbnailPath = $this->generateVideoThumbnail($uploadedFile);
-            } elseif (Str::startsWith($mimeType, 'audio/')) {
-                $fileType = 'audio';
-            } else {
-                $fileType = 'document';
+                Log::info('Starting file upload', [
+                    'mime_type' => $mimeType,
+                    'size' => $uploadedFile->getSize(),
+                    'original_name' => $uploadedFile->getClientOriginalName()
+                ]);
+
+                // Determine file type
+                if (Str::startsWith($mimeType, 'image/')) {
+                    $fileType = 'image';
+                } elseif (Str::startsWith($mimeType, 'video/')) {
+                    $fileType = 'video';
+                } elseif (Str::startsWith($mimeType, 'audio/')) {
+                    $fileType = 'audio';
+                } else {
+                    $fileType = 'document';
+                }
+
+                // Generate unique filename
+                $extension = $uploadedFile->getClientOriginalExtension();
+                $fileName = time() . '_' . Str::random(10) . '.' . $extension;
+                $filePath = "chat/{$room->id}/{$fileName}";
+
+                Log::info('Uploading to S3', [
+                    'path' => $filePath,
+                    'bucket' => config('filesystems.disks.s3.bucket'),
+                    'region' => config('filesystems.disks.s3.region')
+                ]);
+
+                // Upload to S3 using putFileAs (better method)
+                $s3Path = Storage::disk('s3')->putFileAs(
+                    "chat/{$room->id}",
+                    $uploadedFile,
+                    $fileName,
+                    'public' // ACL
+                );
+
+                if ($s3Path) {
+                    // Get the full S3 URL
+                    $file = Storage::disk('s3')->url($s3Path);
+
+                    Log::info('File uploaded successfully to S3', [
+                        'path' => $s3Path,
+                        'url' => $file
+                    ]);
+                } else {
+                    throw new Exception('S3 upload failed - no path returned');
+                }
+            } catch (Exception $e) {
+                Log::error('S3 Upload Error', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'file_path' => $filePath ?? 'unknown'
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to upload file: ' . $e->getMessage(),
+                    'code' => 500
+                ], 500);
             }
-
-            // Upload to S3 with unique path
-            $fileName = time() . '_' . Str::random(10) . '.' . $uploadedFile->getClientOriginalExtension();
-            $filePath = "chat/{$room->id}/{$fileName}";
-
-            // Store in S3
-            Storage::disk('s3')->put($filePath, file_get_contents($uploadedFile), 'public');
-            $file = Storage::disk('s3')->url($filePath);
         }
 
         $text = $request->text ?? '';
@@ -132,7 +173,7 @@ class SingleChatController extends Controller
             $isBlurred = true;
         }
 
-        // Create message with transaction for data consistency
+        // Create message with transaction
         DB::beginTransaction();
         try {
             $chat = Chat::create([
@@ -154,36 +195,64 @@ class SingleChatController extends Controller
             $room->touch();
 
             DB::commit();
+
+            Log::info('Message created successfully', [
+                'message_id' => $chat->id,
+                'has_file' => !is_null($file)
+            ]);
         } catch (Exception $e) {
             DB::rollBack();
 
+            Log::error('Failed to create message', [
+                'error' => $e->getMessage()
+            ]);
+
             // Delete uploaded file if message creation fails
-            if ($file) {
-                Storage::disk('s3')->delete($filePath);
+            if ($filePath) {
+                try {
+                    Storage::disk('s3')->delete($filePath);
+                    Log::info('Rolled back S3 file upload');
+                } catch (Exception $deleteError) {
+                    Log::error('Failed to delete S3 file during rollback', [
+                        'error' => $deleteError->getMessage()
+                    ]);
+                }
             }
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send message',
+                'message' => 'Failed to send message: ' . $e->getMessage(),
                 'code' => 500
             ], 500);
         }
 
-        // Eager load relationships for efficient response
+        // Eager load relationships
         $chat->load([
             'sender:id,first_name,last_name,avatar,last_activity_at',
             'receiver:id,first_name,last_name,avatar,last_activity_at',
             'room:id,user_one_id,user_two_id',
-            'replyTo:id,sender_id,text,file' // Load reply-to message
+            'replyTo:id,sender_id,text,file'
         ]);
 
         // Broadcast message via WebSocket
-        broadcast(new MessageSendEvent($chat))->toOthers();
+        try {
+            broadcast(new MessageSendEvent($chat))->toOthers();
+        } catch (Exception $e) {
+            Log::warning('Failed to broadcast message', [
+                'error' => $e->getMessage()
+            ]);
+        }
 
         // Send push notification
-        $this->sendPushNotification($receiver, $sender_id, $text, $file, $fileType);
+        try {
+            $this->sendPushNotification($receiver, $sender_id, $text, $file, $fileType);
+        } catch (Exception $e) {
+            Log::warning('Failed to send push notification', [
+                'error' => $e->getMessage()
+            ]);
+        }
 
-        // Clear cache for chat list
+        // Clear cache
         Cache::forget("chat_list_user_{$sender_id}");
         Cache::forget("chat_list_user_{$receiver_id}");
 

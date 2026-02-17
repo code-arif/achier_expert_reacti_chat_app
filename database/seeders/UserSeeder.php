@@ -36,13 +36,13 @@ class UserSeeder extends Seeder
             'is_apple_signin' => false,
         ]);
 
-        // --- 100 Regular Users data
+        // --- 10 Regular Users data
         $faker = Faker::create();
 
-        for ($i = 1; $i <= 100; $i++) {
+        for ($i = 1; $i <= 10; $i++) {
             $firstName = $faker->firstName;
             $lastName = $faker->lastName;
-            $email = strtolower($firstName . '.' . $lastName . $i . '@example.com');
+            $email = strtolower($firstName . '.' . $lastName . $i . '@gmail.com');
 
             User::create([
                 'first_name' => $firstName,

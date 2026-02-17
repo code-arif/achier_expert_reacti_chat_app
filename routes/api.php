@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Api\PrivacyController;
 use App\Http\Controllers\Api\Chat\ChatController;
 use App\Http\Controllers\Api\User\UserController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Api\Auth\UserProfileController;
 use App\Http\Controllers\Api\Friend\FindFriendController;
 use App\Http\Controllers\Api\Friend\ReportUserController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
+use App\Http\Controllers\Api\Chat\V2\SingleChatController;
 use App\Http\Controllers\Api\Auth\AuthenticationController;
 use App\Http\Controllers\Api\Friend\FriendRequestController;
 use App\Http\Controllers\Api\Chat\Group\GroupCreateController;
@@ -109,6 +111,37 @@ Route::group(['middleware' => 'auth:api'], function () {
     | Chatting System Version 2.0 Routes
     |--------------------------------------------------------------------------
     */
+    Route::middleware(['auth:api'])->prefix('v2/auth/chat')->group(function () {
+        // Chat list
+        Route::get('/list', [SingleChatController::class, 'listCombined']); // Combined user + group chat list
+
+        // Send message
+        Route::post('/send/{receiver_id}', [SingleChatController::class, 'send']);
+
+        // Get conversation
+        Route::get('/conversation/{receiver_id}', [SingleChatController::class, 'conversation']);
+
+        // Get/create room
+        Route::get('/room/{receiver_id}', [SingleChatController::class, 'room']);
+
+        // Search users
+        Route::get('/search', [SingleChatController::class, 'search']);
+
+        // Mark messages as read/seen
+        Route::get('/seen/all/{receiver_id}', [SingleChatController::class, 'seenAll']); // Mark all as read
+        Route::get('/seen/single/{chat_id}', [SingleChatController::class, 'seenSingle']); // Mark single as read
+
+        // Mark media as viewed (unblur)
+        Route::post('/mark-viewed/{message_id}', [SingleChatController::class, 'markAsViewed']);
+
+        // Delete operations
+        Route::delete('/delete/{receiver_id}', [SingleChatController::class, 'deleteChat']); // Delete entire conversation
+        Route::delete('/delete/chat/messages', [SingleChatController::class, 'deleteMessage']); // Delete single message
+
+        // NEW FEATURES
+        Route::post('/forward', [SingleChatController::class, 'forwardMessage']); // Forward message
+        Route::post('/typing/{receiver_id}', [SingleChatController::class, 'typingStatus']); // Update typing status
+    });
 
 
     // New group chat routes
@@ -149,5 +182,26 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::post("token/add", "store");
         Route::post("token/get", "getToken");
         Route::post("token/delete", "deleteToken");
+    });
+
+
+    // Test S3 Connection
+    Route::get('/test-s3', function () {
+        try {
+            Storage::disk('s3')->put('test.txt', 'Hello S3!');
+            $url = Storage::disk('s3')->url('test.txt');
+            Storage::disk('s3')->delete('test.txt');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'S3 connection successful!',
+                'test_url' => $url
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     });
 });
