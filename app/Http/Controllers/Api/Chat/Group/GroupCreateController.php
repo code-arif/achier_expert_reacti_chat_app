@@ -95,7 +95,6 @@ class GroupCreateController extends Controller
         }
     }
 
-
     /**
      * Get all groups for authenticated user
      */
@@ -137,7 +136,6 @@ class GroupCreateController extends Controller
             'code' => 200
         ]);
     }
-
 
     /**
      * Get group details

@@ -2,25 +2,123 @@
 
 namespace App\Http\Controllers\Api\Chat\Group;
 
-use App\Models\Group;
-use App\Helper\Helper;
-use App\Models\GroupMessage;
-use Illuminate\Http\Request;
-use App\Models\GroupMessageRead;
-use Illuminate\Http\JsonResponse;
-use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
 use App\Events\GroupMessageSendEvent;
-use App\Models\GroupMessageUserStatus;
-use App\Http\Resources\MessageResource;
-use Illuminate\Support\Facades\Validator;
+use App\Helper\Helper;
+use App\Http\Controllers\Controller;
 use App\Http\Resources\GroupMessageMediaResource;
+use App\Http\Resources\MessageResource;
+use App\Models\Group;
+use App\Models\GroupMessage;
+use App\Models\GroupMessageRead;
+use App\Models\GroupMessageUserStatus;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class GroupMessageController extends Controller
 {
     /**
      * Send message to group
      */
+    // public function sendMessage(Request $request, $group_id): JsonResponse
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'text' => 'nullable|string|max:1000',
+    //         'file' => 'nullable|max:51200',
+    //         'message_type' => 'nullable|in:normal,reaction',
+    //         'reply_to_message_id' => 'nullable|exists:group_messages,id',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json(['message' => $validator->errors()->first()], 422);
+    //     }
+
+    //     $authUser = Auth::guard('api')->user();
+    //     $group = Group::find($group_id);
+
+    //     if (!$group) {
+    //         return response()->json(['success' => false, 'message' => 'Group not found', 'code' => 404]);
+    //     }
+
+    //     if (!$group->isMember($authUser->id)) {
+    //         return response()->json(['success' => false, 'message' => 'You are not a member of this group', 'code' => 403]);
+    //     }
+
+    //     // ---------------------------
+    //     // FILE UPLOAD
+    //     // ---------------------------
+    //     $file = null;
+    //     if ($request->hasFile('file')) {
+    //         $file = Helper::fileUpload($request->file('file'), 'group_message', time() . 'group_chat_image' . $request->file('file'));
+    //     }
+
+    //     // ---------------------------
+    //     // DETERMINE MESSAGE TYPE
+    //     // ---------------------------
+    //     $messageType = $request->input('message_type', 'normal');
+    //     $isBlurred = false;
+
+    //     // If it's a normal message with media, it should be blurred
+    //     if ($messageType === 'normal' && $file) {
+    //         $isBlurred = true;
+    //     }
+
+    //     // ---------------------------
+    //     // SAVE MESSAGE (only message-level data)
+    //     // ---------------------------
+    //     $message = GroupMessage::create([
+    //         'group_id' => $group_id,
+    //         'sender_id' => $authUser->id,
+    //         'text' => $request->text,
+    //         'file' => $file,
+    //         'status' => 'sent',
+    //         'message_type' => $messageType,
+    //         'reply_to_message_id' => $request->reply_to_message_id,
+    //     ]);
+
+    //     // ---------------------------
+    //     // SAVE USER-SPECIFIC STATUS FOR SENDER
+    //     // ---------------------------
+    //     // sender's own message → always unblurred
+    //     GroupMessageUserStatus::create([
+    //         'message_id' => $message->id,
+    //         'user_id' => $authUser->id,
+    //         'is_viewed' => false,
+    //         'is_blurred' => $isBlurred,
+    //     ]);
+
+    //     // ---------------------------
+    //     // PRE-LOAD RELATIONS
+    //     // ---------------------------
+    //     // $message->load([
+    //     //     'sender:id,first_name,last_name,avatar,last_activity_at',
+    //     //     'group:id,name,avatar'
+    //     // ]);
+
+    //     $message->load([
+    //         'sender:id,first_name,last_name,avatar,last_activity_at',
+    //         'group:id,name,avatar',
+    //         'replyTo.sender:id,first_name,last_name,avatar',
+    //     ]);
+
+    //     // ---------------------------
+    //     // BROADCAST TO GROUP MEMBERS
+    //     // ---------------------------
+    //     broadcast(new GroupMessageSendEvent($message))->toOthers();
+
+    //     // ---------------------------
+    //     // RETURN SAME RESPONSE FORMAT
+    //     // ---------------------------
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Message sent successfully',
+    //         'data' => ['message' => new MessageResource($message)],
+    //         'code' => 200
+    //     ]);
+    // }
+
     public function sendMessage(Request $request, $group_id): JsonResponse
     {
         $validator = Validator::make($request->all(), [
@@ -59,47 +157,40 @@ class GroupMessageController extends Controller
         $messageType = $request->input('message_type', 'normal');
         $isBlurred = false;
 
-        // If it's a normal message with media, it should be blurred
         if ($messageType === 'normal' && $file) {
             $isBlurred = true;
         }
 
         // ---------------------------
-        // SAVE MESSAGE (only message-level data)
+        // SAVE MESSAGE
         // ---------------------------
         $message = GroupMessage::create([
-            'group_id' => $group_id,
-            'sender_id' => $authUser->id,
-            'text' => $request->text,
-            'file' => $file,
-            'status' => 'sent',
-            'message_type' => $messageType,
+            'group_id'            => $group_id,
+            'sender_id'           => $authUser->id,
+            'text'                => $request->text,
+            'file'                => $file,
+            'status'              => 'sent',
+            'message_type'        => $messageType,
             'reply_to_message_id' => $request->reply_to_message_id,
         ]);
 
         // ---------------------------
         // SAVE USER-SPECIFIC STATUS FOR SENDER
         // ---------------------------
-        // sender's own message → always unblurred
         GroupMessageUserStatus::create([
             'message_id' => $message->id,
-            'user_id' => $authUser->id,
-            'is_viewed' => false,
+            'user_id'    => $authUser->id,
+            'is_viewed'  => false,
             'is_blurred' => $isBlurred,
         ]);
 
         // ---------------------------
         // PRE-LOAD RELATIONS
         // ---------------------------
-        // $message->load([
-        //     'sender:id,first_name,last_name,avatar,last_activity_at',
-        //     'group:id,name,avatar'
-        // ]);
-
         $message->load([
             'sender:id,first_name,last_name,avatar,last_activity_at',
             'group:id,name,avatar',
-            'replyTo.sender:id,first_name,last_name,avatar', // ✅ নতুন
+            'replyTo.sender:id,first_name,last_name,avatar',
         ]);
 
         // ---------------------------
@@ -108,13 +199,59 @@ class GroupMessageController extends Controller
         broadcast(new GroupMessageSendEvent($message))->toOthers();
 
         // ---------------------------
-        // RETURN SAME RESPONSE FORMAT
+        // FIREBASE NOTIFICATION (all members except sender)
+        // ---------------------------
+        $senderName = $authUser->first_name . ' ' . $authUser->last_name;
+        $groupName  = $group->name;
+
+        // Message preview created
+        $messagePreview = '';
+        if ($file) {
+            $extension       = pathinfo($file, PATHINFO_EXTENSION);
+            $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            $videoExtensions = ['mp4', 'mov', 'avi', 'mkv'];
+
+            if (in_array(strtolower($extension), $imageExtensions)) {
+                $messagePreview = '📷 Photo';
+            } elseif (in_array(strtolower($extension), $videoExtensions)) {
+                $messagePreview = '🎥 Video';
+            } else {
+                $messagePreview = '📎 File';
+            }
+        } else {
+            $messagePreview = Str::limit($request->text ?? '', 50);
+        }
+
+        // Notify the firebase tokens of all members except the sender.
+        $groupMembers = $group->members()
+            ->where('user_id', '!=', $authUser->id)
+            ->with('user.firebaseTokens')
+            ->get();
+
+        foreach ($groupMembers as $member) {
+            if (!$member->user || $member->user->firebaseTokens->isEmpty()) {
+                continue;
+            }
+
+            $notifyData = [
+                'title' => $groupName . ' • ' . $senderName,
+                'body'  => $messagePreview,
+                'icon'  => $authUser->avatar ?? config('settings.logo'),
+            ];
+
+            foreach ($member->user->firebaseTokens as $firebaseToken) {
+                Helper::sendNotifyMobile($firebaseToken->token, $notifyData);
+            }
+        }
+
+        // ---------------------------
+        // RETURN RESPONSE
         // ---------------------------
         return response()->json([
             'success' => true,
             'message' => 'Message sent successfully',
-            'data' => ['message' => new MessageResource($message)],
-            'code' => 200
+            'data'    => ['message' => new MessageResource($message)],
+            'code'    => 200
         ]);
     }
 
@@ -185,24 +322,35 @@ class GroupMessageController extends Controller
         }
 
         $perPage = 10000000;
-        // $messages = GroupMessage::where('group_id', $group_id)
-        //     ->with([
-        //         'sender:id,first_name,last_name,avatar,last_activity_at',
-        //         'reads.user:id,first_name,last_name',
-        //         'messageStatus'
-        //     ])
-        //     ->orderBy('created_at', 'asc')
-        //     ->paginate($perPage);
 
         $messages = GroupMessage::where('group_id', $group_id)
             ->with([
                 'sender:id,first_name,last_name,avatar,last_activity_at',
                 'reads.user:id,first_name,last_name',
                 'messageStatus',
-                'replyTo.sender:id,first_name,last_name,avatar', // ✅ নতুন
+                'replyTo.sender:id,first_name,last_name,avatar',
             ])
             ->orderBy('created_at', 'asc')
             ->paginate($perPage);
+
+        //  FIX: Create missing status records for current user
+        foreach ($messages as $message) {
+            $isMedia = !is_null($message->file);
+            $isSender = ($message->sender_id == $authUser->id);
+
+            GroupMessageUserStatus::firstOrCreate(
+                [
+                    'message_id' => $message->id,
+                    'user_id'    => $authUser->id,
+                ],
+                [
+                    'is_viewed'  => $isSender ? true : false,
+                    // Sender itself unblurred, reaction unblurred, normal text unblurred
+                    // Only normal + media → receiver will see blur
+                    'is_blurred' => (!$isSender && $isMedia && $message->message_type === 'normal') ? true : false,
+                ]
+            );
+        }
 
         return response()->json([
             'success' => true,

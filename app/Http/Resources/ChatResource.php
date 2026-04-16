@@ -74,6 +74,12 @@ class ChatResource extends JsonResource
                     'text'       => $replied->text,
                     'file'       => $replied->file ? asset($replied->file) : null,
                     'media_type' => $mediaType,
+                    'parent_message_id' => $replied->reply_to_id,
+                    'parent_message' => $replied->parentReply ? [
+                        'id' => $replied->parentReply->id,
+                        'text' => $replied->parentReply->text,
+                        'file' => $replied->parentReply->file ? asset($replied->parentReply->file) : null,
+                    ] : null,
                     'sender'     => [
                         'id'         => $replied->sender->id ?? null,
                         'first_name' => $replied->sender->first_name ?? null,

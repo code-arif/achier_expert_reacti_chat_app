@@ -174,6 +174,11 @@ class Chat extends Model
         return $this->belongsTo(Chat::class, 'reply_to_id');
     }
 
+    public function parentReply()
+    {
+        return $this->belongsTo(Chat::class, 'reply_to_id');
+    }
+
     /**
      * Relationship: Forwarded from user
      */

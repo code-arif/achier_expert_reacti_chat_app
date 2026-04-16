@@ -100,11 +100,19 @@ class ChatController extends Controller
             'reply_to_id'  => $request->reply_to_id, // New
         ]);
 
+        // $chat->load([
+        //     'sender:id,first_name,last_name,avatar,last_activity_at',
+        //     'receiver:id,first_name,last_name,avatar,last_activity_at',
+        //     'room:id,user_one_id,user_two_id',
+        //     'replyTo.sender:id,first_name,last_name,avatar',
+        // ]);
+
         $chat->load([
             'sender:id,first_name,last_name,avatar,last_activity_at',
             'receiver:id,first_name,last_name,avatar,last_activity_at',
             'room:id,user_one_id,user_two_id',
             'replyTo.sender:id,first_name,last_name,avatar',
+            'replyTo.parentReply:id,text,file'
         ]);
 
         broadcast(new MessageSendEvent($chat))->toOthers();
@@ -210,6 +218,7 @@ class ChatController extends Controller
                 'receiver:id,first_name,last_name,avatar,last_activity_at',
                 'room:id,user_one_id,user_two_id',
                 'replyTo.sender:id,first_name,last_name,avatar',
+                'replyTo.parentReply:id,text,file'
             ])
             ->orderBy('created_at')
             ->paginate($perPage);
@@ -500,7 +509,6 @@ class ChatController extends Controller
             });
         }
 
-        // সমাধান: (object) cast করুন
         $users = collect($usersQuery->get()->map(function ($user) use ($authUser) {
             $lastChat = Chat::where(function ($query) use ($user, $authUser) {
                 $query->where('sender_id', $authUser->id)
