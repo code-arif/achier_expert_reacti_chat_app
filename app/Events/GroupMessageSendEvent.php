@@ -66,7 +66,7 @@ class GroupMessageSendEvent implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'message' => new MessageResource($this->message)
+            'message' => new MessageResource($this->message, 'broadcast')
         ];
     }
 

@@ -8,40 +8,60 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class MessageResource extends JsonResource
 {
-    public function toArray(Request $request): array
-    {
+    protected $type;
 
-        // Current authenticated user
+
+    public function __construct($resource, $type = null)
+    {
+        parent::__construct($resource);
+        $this->type = $type;
+    }
+    public function toArray(Request $request, $type = null): array
+    {
         $userId = auth('api')->id();
 
-        // Fetch per-user view/blur status
-        $status = GroupMessageUserStatus::where('message_id', $this->id)
-            ->where('user_id', $userId)
-            ->first();
+        // FIX #4: Preloaded relation use করো — fresh DB query নয়
+        // messageStatus eager loaded হলে সেখান থেকে নাও (N+1 avoid)
+        // messageStatus load করার সময় user_id filter করা ছিল, তাই first() ই সেই user-এরটা
+        if ($this->relationLoaded('messageStatus')) {
+            $status = $this->messageStatus->first();
+        } else {
+            // Fallback: relation load না থাকলে direct query (যেমন editMessage response-এ)
+            $status = GroupMessageUserStatus::where('message_id', $this->id)
+                ->where('user_id', $userId)
+                ->first();
+        }
+        if ($this->type === 'broadcast') {
+            $is_blurred   = 1;
+            $is_viewed   = $status ? (int) $status->is_viewed  : false;
+        } elseif ($this->message_type === 'reaction') {
+            $is_blurred   = 0;
+            $is_viewed   = 0;
+        } else {
+            // default case (যেমন normal API response)
+
+            $is_blurred   = $status ? (int) $status->is_blurred : true;
+            $is_viewed    = $status ? (int) $status->is_viewed  : false;
+        }
 
         return [
-            'id' => $this->id,
-            'group_id' => (int) $this->group_id,
-            'sender_id' => (int) $this->sender_id,
-            'text' => $this->text,
-            'file' => $this->file ? asset($this->file) : null,
-            'status'          => $this->status,
+            'id'           => $this->id,
+            'group_id'     => (int) $this->group_id,
+            'sender_id'    => (int) $this->sender_id,
+            'text'         => $this->text,
+            'file'         => $this->file ? asset($this->file) : null,
+            'status'       => $this->status,
 
-            // These now come from group_message_user_statuses table
-            'is_blurred'    => $status->is_blurred ?? true,
-            'is_viewed'     => $status->is_viewed ?? false,
+            // Per-user blur/view state — correctly isolated
+            'is_blurred'   =>   $is_blurred,
+            'is_viewed'    => $is_viewed,
 
-            'message_type'    => $this->message_type ?? 'normal',
-            'created_at' => $this->created_at?->diffForHumans(),
+            'message_type' => $this->message_type ?? 'normal',
+            'created_at'   => $this->created_at?->diffForHumans(),
+            'media_type'   => $this->resolveMediaType($this->file),
 
-
-            // Media Type Detection
-            'media_type' => $this->resolveMediaType($this->file),
-
-            // Reply block
             'reply_to' => $this->whenLoaded('replyTo', function () {
                 $replied = $this->replyTo;
-
                 if (!$replied) return null;
 
                 return [
@@ -62,44 +82,37 @@ class MessageResource extends JsonResource
             }),
 
             'sender' => [
-                'id' => $this->sender->id ?? null,
+                'id'         => $this->sender->id ?? null,
                 'first_name' => $this->sender->first_name ?? null,
-                'last_name' => $this->sender->last_name ?? null,
-                'avatar' => isset($this->sender->avatar) && $this->sender->avatar ?
-                    asset($this->sender->avatar) : asset('default/default_image.jpg'),
+                'last_name'  => $this->sender->last_name ?? null,
+                'avatar'     => isset($this->sender->avatar) && $this->sender->avatar
+                    ? asset($this->sender->avatar)
+                    : asset('default/default_image.jpg'),
             ],
 
             'group' => [
-                'id' => $this->group->id ?? null,
-                'name' => $this->group->name ?? null,
-                'avatar' => isset($this->group->avatar) && $this->group->avatar ?
-                    asset($this->group->avatar) : asset('default/default_image.jpg'),
+                'id'     => $this->group->id ?? null,
+                'name'   => $this->group->name ?? null,
+                'avatar' => isset($this->group->avatar) && $this->group->avatar
+                    ? asset($this->group->avatar)
+                    : asset('default/default_image.jpg'),
             ],
         ];
     }
 
-
-    /**
-     * Detect media type from file extension
-     */
     protected function resolveMediaType(?string $file): ?string
     {
         if (!$file) return null;
 
         $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 
-        $imageExtensions    = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'heif', 'heic', 'tiff', 'raw'];
-        $videoExtensions    = ['mp4', 'mov', 'avi', 'mkv', 'flv', 'wmv', 'webm', '3gp', 'mpeg', 'mpg'];
-        $audioExtensions    = ['mp3', 'wav', 'ogg', 'aac', 'm4a', 'flac', 'wma'];
-        $documentExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf', 'csv'];
-        $archiveExtensions  = ['zip', 'rar', '7z', 'tar', 'gz'];
-
-        if (in_array($extension, $imageExtensions))    return 'image';
-        if (in_array($extension, $videoExtensions))    return 'video';
-        if (in_array($extension, $audioExtensions))    return 'audio';
-        if (in_array($extension, $documentExtensions)) return 'document';
-        if (in_array($extension, $archiveExtensions))  return 'archive';
-
-        return 'file';
+        return match (true) {
+            in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'heif', 'heic', 'tiff', 'raw']) => 'image',
+            in_array($extension, ['mp4', 'mov', 'avi', 'mkv', 'flv', 'wmv', 'webm', '3gp', 'mpeg', 'mpg'])               => 'video',
+            in_array($extension, ['mp3', 'wav', 'ogg', 'aac', 'm4a', 'flac', 'wma'])                                  => 'audio',
+            in_array($extension, ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf', 'csv'])              => 'document',
+            in_array($extension, ['zip', 'rar', '7z', 'tar', 'gz'])                                                 => 'archive',
+            default                                                                                              => 'file',
+        };
     }
 }

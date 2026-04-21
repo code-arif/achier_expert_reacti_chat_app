@@ -71,4 +71,9 @@ class GroupMessage extends Model
     {
         return $this->hasMany(GroupMessage::class, 'reply_to_message_id');
     }
+
+    // public function currentUserStatus()
+    // {
+    //     return $this->hasOne(GroupMessageUserStatus::class, 'message_id');
+    // }
 }

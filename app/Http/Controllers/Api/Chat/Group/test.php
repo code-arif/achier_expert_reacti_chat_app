@@ -1,22 +1,3 @@
-<?php
-
-namespace App\Http\Controllers\Api\Chat\Group;
-
-use App\Events\GroupMessageSendEvent;
-use App\Helper\Helper;
-use App\Http\Controllers\Controller;
-use App\Http\Resources\GroupMessageMediaResource;
-use App\Http\Resources\MessageResource;
-use App\Models\Group;
-use App\Models\GroupMessage;
-use App\Models\GroupMessageRead;
-use App\Models\GroupMessageUserStatus;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
-
 class GroupMessageController extends Controller
 {
     /**
@@ -122,9 +103,9 @@ class GroupMessageController extends Controller
     public function sendMessage(Request $request, $group_id): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'text'               => 'nullable|string|max:1000',
-            'file'               => 'nullable|max:51200',
-            'message_type'       => 'nullable|in:normal,reaction',
+            'text' => 'nullable|string|max:1000',
+            'file' => 'nullable|max:51200',
+            'message_type' => 'nullable|in:normal,reaction',
             'reply_to_message_id' => 'nullable|exists:group_messages,id',
         ]);
 
@@ -133,7 +114,7 @@ class GroupMessageController extends Controller
         }
 
         $authUser = Auth::guard('api')->user();
-        $group    = Group::find($group_id);
+        $group = Group::find($group_id);
 
         if (!$group) {
             return response()->json(['success' => false, 'message' => 'Group not found', 'code' => 404]);
@@ -143,23 +124,27 @@ class GroupMessageController extends Controller
             return response()->json(['success' => false, 'message' => 'You are not a member of this group', 'code' => 403]);
         }
 
+        // ---------------------------
         // FILE UPLOAD
+        // ---------------------------
         $file = null;
         if ($request->hasFile('file')) {
-            $file = Helper::fileUpload(
-                $request->file('file'),
-                'group_message',
-                time() . 'group_chat_image' . $request->file('file')
-            );
+            $file = Helper::fileUpload($request->file('file'), 'group_message', time() . 'group_chat_image' . $request->file('file'));
         }
 
-        // DETERMINE MESSAGE TYPE & BLUR FLAG
+        // ---------------------------
+        // DETERMINE MESSAGE TYPE
+        // ---------------------------
         $messageType = $request->input('message_type', 'normal');
+        $isBlurred = false;
 
-        // Only normal + media messages are blurred for recipients
-        $isBlurredForRecipients = ($messageType === 'normal' && $file !== null);
+        if ($messageType === 'normal' && $file) {
+            $isBlurred = true;
+        }
 
+        // ---------------------------
         // SAVE MESSAGE
+        // ---------------------------
         $message = GroupMessage::create([
             'group_id'            => $group_id,
             'sender_id'           => $authUser->id,
@@ -170,57 +155,55 @@ class GroupMessageController extends Controller
             'reply_to_message_id' => $request->reply_to_message_id,
         ]);
 
-        // -------------------------------------------------------
-        // FIX #1 + FIX #2:
-        // Message send হওয়ার সাথে সাথেই সব member-এর status create করো।
-        // Sender: is_blurred = false (সে নিজের message দেখতে পাবে)
-        // Others: is_blurred = true যদি normal+media হয়, নাহলে false
-        // -------------------------------------------------------
-        $memberIds = $group->members()->pluck('user_id');
-        $now       = now();
+        // ---------------------------
+        // SAVE USER-SPECIFIC STATUS FOR SENDER
+        // ---------------------------
+        GroupMessageUserStatus::create([
+            'message_id' => $message->id,
+            'user_id'    => $authUser->id,
+            'is_viewed'  => false,
+            'is_blurred' => $isBlurred,
+        ]);
 
-        $statusRows = $memberIds->map(function ($memberId) use ($message, $authUser, $isBlurredForRecipients, $now) {
-            $isSender = ($memberId == $authUser->id);
-            return [
-                'message_id' => $message->id,
-                'user_id'    => $memberId,
-                'is_viewed'  => false,
-                'is_blurred' => $isSender ? false : $isBlurredForRecipients,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
-        })->toArray();
-
-        GroupMessageUserStatus::insert($statusRows); // Bulk insert — একটাই query
-
+        // ---------------------------
         // PRE-LOAD RELATIONS
+        // ---------------------------
         $message->load([
             'sender:id,first_name,last_name,avatar,last_activity_at',
             'group:id,name,avatar',
             'replyTo.sender:id,first_name,last_name,avatar',
-            'messageStatus' => fn($q) => $q->where('user_id', $authUser->id),
         ]);
 
+        // ---------------------------
         // BROADCAST TO GROUP MEMBERS
+        // ---------------------------
         broadcast(new GroupMessageSendEvent($message))->toOthers();
 
-        // FIREBASE NOTIFICATION (সব member except sender)
-        $senderName     = $authUser->first_name . ' ' . $authUser->last_name;
-        $groupName      = $group->name;
-        $messagePreview = '';
+        // ---------------------------
+        // FIREBASE NOTIFICATION (all members except sender)
+        // ---------------------------
+        $senderName = $authUser->first_name . ' ' . $authUser->last_name;
+        $groupName  = $group->name;
 
+        // Message preview created
+        $messagePreview = '';
         if ($file) {
-            $ext             = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+            $extension       = pathinfo($file, PATHINFO_EXTENSION);
             $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
             $videoExtensions = ['mp4', 'mov', 'avi', 'mkv'];
 
-            if (in_array($ext, $imageExtensions))      $messagePreview = '📷 Photo';
-            elseif (in_array($ext, $videoExtensions))  $messagePreview = '🎥 Video';
-            else                                        $messagePreview = '📎 File';
+            if (in_array(strtolower($extension), $imageExtensions)) {
+                $messagePreview = '📷 Photo';
+            } elseif (in_array(strtolower($extension), $videoExtensions)) {
+                $messagePreview = '🎥 Video';
+            } else {
+                $messagePreview = '📎 File';
+            }
         } else {
             $messagePreview = Str::limit($request->text ?? '', 50);
         }
 
+        // Notify the firebase tokens of all members except the sender.
         $groupMembers = $group->members()
             ->where('user_id', '!=', $authUser->id)
             ->with('user.firebaseTokens')
@@ -242,14 +225,16 @@ class GroupMessageController extends Controller
             }
         }
 
+        // ---------------------------
+        // RETURN RESPONSE
+        // ---------------------------
         return response()->json([
             'success' => true,
             'message' => 'Message sent successfully',
             'data'    => ['message' => new MessageResource($message)],
-            'code'    => 200,
+            'code'    => 200
         ]);
     }
-
 
 
     /**
@@ -304,10 +289,10 @@ class GroupMessageController extends Controller
     /**
      * Get group messages with pagination
      */
-    public function getMessages(Request $request, $group_id): JsonResponse
+    public function getMessages($group_id): JsonResponse
     {
         $authUser = Auth::guard('api')->user();
-        $group    = Group::find($group_id);
+        $group = Group::find($group_id);
 
         if (!$group) {
             return response()->json(['success' => false, 'message' => 'Group not found', 'code' => 404], 404);
@@ -317,73 +302,50 @@ class GroupMessageController extends Controller
             return response()->json(['success' => false, 'message' => 'You are not a member of this group', 'code' => 403], 403);
         }
 
-        $authUserId = $authUser->id;
-        $perPage    = $request->input('per_page', 50); // FIX #5: reasonable pagination
+        $perPage = 10000000;
 
         $messages = GroupMessage::where('group_id', $group_id)
             ->with([
                 'sender:id,first_name,last_name,avatar,last_activity_at',
                 'reads.user:id,first_name,last_name',
-                // FIX #3 + FIX #4: current user-এর status শুধু load করো, সব user-এরটা না
-                'messageStatus' => fn($q) => $q->where('user_id', $authUserId),
+                'messageStatus',
                 'replyTo.sender:id,first_name,last_name,avatar',
             ])
             ->orderBy('created_at', 'asc')
             ->paginate($perPage);
 
-        // FIX #3: firstOrCreate loop সরিয়ে ফেলা হয়েছে।
-        // sendMessage এখন সব member-এর status একসাথে create করে।
-        // শুধু edge case handle করো: পুরনো message যার status নেই (migration-এর আগের data)
-        $missingStatusMessageIds = $messages->filter(function ($message) {
-            return $message->messageStatus->isEmpty();
-        })->pluck('id');
+        //  FIX: Create missing status records for current user
+        foreach ($messages as $message) {
+            $isMedia = !is_null($message->file);
+            $isSender = ($message->sender_id == $authUser->id);
 
-        if ($missingStatusMessageIds->isNotEmpty()) {
-            $now  = now();
-            $rows = $missingStatusMessageIds->map(function ($msgId) use ($authUserId, $messages, $now) {
-                $msg      = $messages->firstWhere('id', $msgId);
-                $isSender = ($msg->sender_id == $authUserId);
-                $isMedia  = !is_null($msg->file);
-
-                return [
-                    'message_id' => $msgId,
-                    'user_id'    => $authUserId,
-                    'is_viewed'  => $isSender,
-                    'is_blurred' => !$isSender && $isMedia && $msg->message_type === 'normal',
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            })->toArray();
-
-            // insertOrIgnore — duplicate থাকলে skip করবে, error দেবে না
-            GroupMessageUserStatus::insertOrIgnore($rows);
-
-            // Re-load missing statuses after insert
-            $messages->each(function ($message) use ($authUserId) {
-                if ($message->messageStatus->isEmpty()) {
-                    $message->setRelation(
-                        'messageStatus',
-                        GroupMessageUserStatus::where('message_id', $message->id)
-                            ->where('user_id', $authUserId)
-                            ->get()
-                    );
-                }
-            });
+            GroupMessageUserStatus::firstOrCreate(
+                [
+                    'message_id' => $message->id,
+                    'user_id'    => $authUser->id,
+                ],
+                [
+                    'is_viewed'  => $isSender ? true : false,
+                    // Sender itself unblurred, reaction unblurred, normal text unblurred
+                    // Only normal + media → receiver will see blur
+                    'is_blurred' => (!$isSender && $isMedia && $message->message_type === 'normal') ? true : false,
+                ]
+            );
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Messages retrieved successfully',
-            'data'    => [
-                'messages'   => MessageResource::collection($messages),
+            'data' => [
+                'messages' => MessageResource::collection($messages),
                 'pagination' => [
-                    'total'        => $messages->total(),
+                    'total' => $messages->total(),
                     'current_page' => $messages->currentPage(),
-                    'last_page'    => $messages->lastPage(),
-                    'per_page'     => $messages->perPage(),
+                    'last_page' => $messages->lastPage(),
+                    'per_page' => $messages->perPage(),
                 ],
             ],
-            'code' => 200,
+            'code' => 200
         ]);
     }
 
@@ -467,40 +429,47 @@ class GroupMessageController extends Controller
      */
     public function markAsViewed(Request $request, $message_id): JsonResponse
     {
-        $userId  = Auth::guard('api')->id();
+        $user_id = Auth::id();
+
         $message = GroupMessage::find($message_id);
 
         if (!$message) {
-            return response()->json(['success' => false, 'message' => 'Message not found', 'code' => 404]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Message not found',
+                'code' => 404
+            ]);
         }
 
-        if (!$message->group->isMember($userId)) {
-            return response()->json(['success' => false, 'message' => 'You are not a member of this group', 'code' => 403]);
+        // Ensure user belongs to the group
+        if (!$message->group->isMember($user_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not a member of this group',
+                'code' => 403
+            ]);
         }
 
-        // শুধু এই user-এর নিজের status update হবে — অন্য কারো না
+        // Create or update user-specific status record
         $status = GroupMessageUserStatus::updateOrCreate(
             [
                 'message_id' => $message_id,
-                'user_id'    => $userId,       // শুধু এই user-এর record
+                'user_id' => $user_id,
             ],
             [
-                'is_viewed'  => true,
+                'is_viewed' => true,
                 'is_blurred' => false,
             ]
         );
 
-        // FIX #6: Real-time broadcast — অন্য সবাই জানুক কে viewed করল
-        // (GroupMessageViewedEvent তৈরি করতে হবে — নিচে দেখো)
-        // broadcast(new GroupMessageViewedEvent($message_id, $userId))->toOthers();
-
         return response()->json([
             'success' => true,
             'message' => 'Message marked as viewed',
-            'data'    => ['status' => $status],
-            'code'    => 200,
+            'data' => ['status' => $status],
+            'code' => 200
         ]);
     }
+
 
     /**
      * Bulk delete messages (Admin only)
