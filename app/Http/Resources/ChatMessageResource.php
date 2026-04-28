@@ -46,30 +46,33 @@ class ChatMessageResource extends JsonResource
 
                 if (!$replied) return null;
 
-                // Media type detect
                 $mediaType = null;
                 if ($replied->file) {
                     $ext = strtolower(pathinfo($replied->file, PATHINFO_EXTENSION));
-                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']))      $mediaType = 'image';
-                    elseif (in_array($ext, ['mp4', 'mov', 'avi', 'mkv', 'webm']))         $mediaType = 'video';
-                    elseif (in_array($ext, ['mp3', 'wav', 'ogg', 'aac', 'm4a']))          $mediaType = 'audio';
-                    elseif (in_array($ext, ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt']))  $mediaType = 'document';
+                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']))     $mediaType = 'image';
+                    elseif (in_array($ext, ['mp4', 'mov', 'avi', 'mkv', 'webm']))        $mediaType = 'video';
+                    elseif (in_array($ext, ['mp3', 'wav', 'ogg', 'aac', 'm4a']))         $mediaType = 'audio';
+                    elseif (in_array($ext, ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'])) $mediaType = 'document';
                     else $mediaType = 'file';
                 }
 
                 return [
-                    'id'         => $replied->id,
-                    'sender_id'  => (int) $replied->sender_id,
-                    'text'       => $replied->text,
-                    'file'       => $replied->file ? asset($replied->file) : null,
-                    'media_type' => $mediaType,
+                    'id'                => $replied->id,
+                    'sender_id'         => (int) $replied->sender_id,
+                    'text'              => $replied->text,
+                    'file'              => $replied->file ? asset($replied->file) : null,
+                    'media_type'        => $mediaType,
+
+                    // replied message's own blur state — NOT derived from parent
+                    'is_blurred'        => (bool) $replied->is_blurred,
+
                     'parent_message_id' => $replied->reply_to_id,
-                    'parent_message' => $replied->parentReply ? [
-                        'id' => $replied->parentReply->id,
+                    'parent_message'    => $replied->parentReply ? [
+                        'id'   => $replied->parentReply->id,
                         'text' => $replied->parentReply->text,
                         'file' => $replied->parentReply->file ? asset($replied->parentReply->file) : null,
                     ] : null,
-                    'sender'     => [
+                    'sender' => [
                         'id'         => $replied->sender->id ?? null,
                         'first_name' => $replied->sender->first_name ?? null,
                         'last_name'  => $replied->sender->last_name ?? null,

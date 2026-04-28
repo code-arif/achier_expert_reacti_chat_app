@@ -53,16 +53,53 @@ class MessageResource extends JsonResource
             'status'       => $this->status,
 
             // Per-user blur/view state — correctly isolated
-            'is_blurred'   =>   $is_blurred,
+            'is_blurred'   =>  $is_blurred,
             'is_viewed'    => $is_viewed,
 
             'message_type' => $this->message_type ?? 'normal',
             'created_at'   => $this->created_at?->diffForHumans(),
             'media_type'   => $this->resolveMediaType($this->file),
 
-            'reply_to' => $this->whenLoaded('replyTo', function () {
+            // 'reply_to' => $this->whenLoaded('replyTo', function () use ($is_blurred) {
+            //     $replied = $this->replyTo;
+            //     if (!$replied) return null;
+
+            //     return [
+            //         'id'         => $replied->id,
+            //         'sender_id'  => (int) $replied->sender_id,
+            //         'text'       => $replied->text,
+            //         'file'       => $replied->file ? asset($replied->file) : null,
+            //         'media_type' => $this->resolveMediaType($replied->file),
+            //         'is_blurred'   =>  $is_blurred ? 0 : 1, // reply message blur state should be same as current message for consistency
+            //         'sender'     => [
+            //             'id'         => $replied->sender->id ?? null,
+            //             'first_name' => $replied->sender->first_name ?? null,
+            //             'last_name'  => $replied->sender->last_name ?? null,
+            //             'avatar'     => isset($replied->sender->avatar) && $replied->sender->avatar
+            //                 ? asset($replied->sender->avatar)
+            //                 : asset('default/default_image.jpg'),
+            //         ],
+            //     ];
+            // }),
+
+            'reply_to' => $this->whenLoaded('replyTo', function () use ($userId) {
                 $replied = $this->replyTo;
                 if (!$replied) return null;
+
+                // Fetch the actual blur status of the replied message for this user
+                // Use eager-loaded relation if available, else fall back to DB query
+                if ($replied->relationLoaded('messageStatus')) {
+                    $repliedStatus = $replied->messageStatus->first();
+                } else {
+                    $repliedStatus = GroupMessageUserStatus::where('message_id', $replied->id)
+                        ->where('user_id', $userId)
+                        ->first();
+                }
+
+                // Determine blur: use DB status if exists, otherwise infer from message properties
+                $replyIsBlurred = $repliedStatus
+                    ? (int) $repliedStatus->is_blurred
+                    : (int) ($replied->file && $replied->message_type === 'normal');
 
                 return [
                     'id'         => $replied->id,
@@ -70,6 +107,7 @@ class MessageResource extends JsonResource
                     'text'       => $replied->text,
                     'file'       => $replied->file ? asset($replied->file) : null,
                     'media_type' => $this->resolveMediaType($replied->file),
+                    'is_blurred' => $replyIsBlurred,
                     'sender'     => [
                         'id'         => $replied->sender->id ?? null,
                         'first_name' => $replied->sender->first_name ?? null,

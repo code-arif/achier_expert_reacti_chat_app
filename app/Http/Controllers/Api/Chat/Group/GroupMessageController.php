@@ -198,6 +198,7 @@ class GroupMessageController extends Controller
             'sender:id,first_name,last_name,avatar,last_activity_at',
             'group:id,name,avatar',
             'replyTo.sender:id,first_name,last_name,avatar',
+            'replyTo.messageStatus' => fn($q) => $q->where('user_id', $authUser->id),
             'messageStatus' => fn($q) => $q->where('user_id', $authUser->id),
         ]);
 
@@ -249,8 +250,6 @@ class GroupMessageController extends Controller
             'code'    => 200,
         ]);
     }
-
-
 
     /**
      * Edit/Update group message
@@ -324,9 +323,10 @@ class GroupMessageController extends Controller
             ->with([
                 'sender:id,first_name,last_name,avatar,last_activity_at',
                 'reads.user:id,first_name,last_name',
-                // FIX #3 + FIX #4: current user-এর status শুধু load করো, সব user-এরটা না
-                'messageStatus' => fn($q) => $q->where('user_id', $authUserId),
+                'messageStatus'    => fn($q) => $q->where('user_id', $authUserId),
                 'replyTo.sender:id,first_name,last_name,avatar',
+                // eager-load blur status for the replied message too
+                'replyTo.messageStatus' => fn($q) => $q->where('user_id', $authUserId),
             ])
             ->orderBy('created_at', 'asc')
             ->paginate($perPage);
